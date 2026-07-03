@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Forecast Dashboard{% endblock %}
+{% block extra_css %}{% endblock %}
+{% block content %}
+{% set r = results %}
+{% set fs = r.get('forecast_summary', {}) %}
+{% set mm = r.get('model_metrics', {}) %}
+{% set fstats = r.get('forecast_statistics', {}) %}
+{% set ins = r.get('model_insights', {}) %}
+{% set best_model = r.get('best_model', report.model_name if report else 'N/A') %}
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        <i class="fas fa-chart-line text-primary me-2"></i>Forecast Dashboard
+      </h2>
+      <p class="text-muted mb-0">
+        {{ dataset.file_name }} &mdash; Model: <strong>{{ best_model }}</strong>
+        <span class="badge-tag badge-tag-primary ms-2">{{ report.created_at.strftime('%Y-%m-%d %H:%M') if report and report.created_at else '' }}</span>
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('forecasting.results', dataset_id=dataset.id) }}" class="btn btn-primary">
+        <i class="fas fa-chart-line me-1"></i>View Full Results
+      </a>
+      <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='csv') }}" class="btn btn-outline-primary">
+        <i class="fas fa-download me-1"></i>Download CSV
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-2 col-6">
+      <div class="stat-card">
+        <div class="text-center">
+          <div class="stat-card-value">{{ best_model }}</div>
+          <div class="stat-card-label mt-1">Best Model</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card">
+        <div class="text-center">
+          <div class="stat-card-value">{{ fs.get('forecast_horizon', report.forecast_horizon if report else 'N/A') }}</div>
+          <div class="stat-card-label mt-1">Forecast Horizon</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card">
+        <div class="text-center">
+          <div class="stat-card-value">{{ mm.get('rmse', report.rmse if report else 'N/A') }}</div>
+          <div class="stat-card-label mt-1">RMSE</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card">
+        <div class="text-center">
+          <div class="stat-card-value">{{ mm.get('mae', report.mae if report else 'N/A') }}</div>
+          <div class="stat-card-label mt-1">MAE</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card">
+        <div class="text-center">
+          <div class="stat-card-value">{{ mm.get('r2', report.r2_score if report else 'N/A') }}</div>
+          <div class="stat-card-label mt-1">R² Score</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card">
+        <div class="text-center">
+          <div class="stat-card-value">{{ mm.get('prediction_accuracy', 'N/A') }}%</div>
+          <div class="stat-card-label mt-1">Accuracy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <h6 class="fw-bold text-muted mb-3"><i class="fas fa-info-circle me-1"></i>Configuration</h6>
+          <table class="table table-sm mb-0">
+            <tr><td><strong>Target Column</strong></td><td>{{ fs.get('target_column', report.target_column if report else 'Auto') }}</td></tr>
+            <tr><td><strong>Date Column</strong></td><td>{{ fs.get('date_column', report.date_column if report else 'Auto') }}</td></tr>
+            <tr><td><strong>Forecast Horizon</strong></td><td>{{ fs.get('forecast_horizon', report.forecast_horizon if report else 'N/A') }} periods</td></tr>
+            <tr><td><strong>Data Points</strong></td><td>{{ fs.get('total_data_points', r.get('full_data_count', 'N/A')) }}</td></tr>
+            <tr><td><strong>Train / Test</strong></td><td>{{ fs.get('training_samples', r.get('train_count', 'N/A')) }} / {{ fs.get('testing_samples', r.get('test_count', 'N/A')) }}</td></tr>
+            <tr><td><strong>Created</strong></td><td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') if report and report.created_at else 'N/A' }}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <h6 class="fw-bold text-muted mb-3"><i class="fas fa-chart-bar me-1"></i>Performance Metrics</h6>
+          <table class="table table-sm mb-0">
+            <tr><td><strong>RMSE</strong></td><td>{{ mm.get('rmse', report.rmse if report else 'N/A') }}</td></tr>
+            <tr><td><strong>MAE</strong></td><td>{{ mm.get('mae', report.mae if report else 'N/A') }}</td></tr>
+            <tr><td><strong>MAPE (%)</strong></td><td>{{ mm.get('mape', report.mape if report else 'N/A') }}</td></tr>
+            <tr><td><strong>SMAPE (%)</strong></td><td>{{ mm.get('smape', 'N/A') }}</td></tr>
+            <tr><td><strong>R² Score</strong></td><td>{{ mm.get('r2', report.r2_score if report else 'N/A') }}</td></tr>
+            <tr><td><strong>Prediction Accuracy</strong></td><td>{{ mm.get('prediction_accuracy', 'N/A') }}%</td></tr>
+            <tr><td><strong>Training Time</strong></td><td>{{ mm.get('training_time', 'N/A') }}s</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card section-card h-100">
+        <div class="card-body d-flex flex-column h-100">
+          <h6 class="fw-bold text-muted mb-3"><i class="fas fa-lightbulb me-1"></i>Forecast Insights</h6>
+          {% if ins.get('forecast_trend') %}
+          <p class="mb-1 small"><strong>Trend:</strong> {{ ins['forecast_trend'] }}</p>
+          {% endif %}
+          {% if ins.get('prediction_reliability') %}
+          <p class="mb-1 small"><strong>Reliability:</strong> {{ ins['prediction_reliability'] }}</p>
+          {% endif %}
+          {% if ins.get('business_recommendation') %}
+          <p class="mb-0 small"><strong>Recommendation:</strong> {{ ins['business_recommendation'][:200] }}{% if ins['business_recommendation']|length > 200 %}...{% endif %}</p>
+          {% endif %}
+          <div class="mt-auto pt-3">
+            <a href="{{ url_for('forecasting.results', dataset_id=dataset.id) }}" class="btn btn-outline-primary btn-sm w-100">
+              <i class="fas fa-chart-line me-1"></i>View Full Results
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if fstats %}
+  <div class="card section-card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold section-title"><i class="fas fa-calculator me-2"></i>Forecast Statistics</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% if fstats.minimum is defined %}<div class="col-md-2 col-4"><div class="text-center"><strong>{{ fstats.minimum }}</strong><br><small class="text-muted">Min</small></div></div>{% endif %}
+        {% if fstats.maximum is defined %}<div class="col-md-2 col-4"><div class="text-center"><strong>{{ fstats.maximum }}</strong><br><small class="text-muted">Max</small></div></div>{% endif %}
+        {% if fstats.average is defined %}<div class="col-md-2 col-4"><div class="text-center"><strong>{{ fstats.average }}</strong><br><small class="text-muted">Avg</small></div></div>{% endif %}
+        {% if fstats.median is defined %}<div class="col-md-2 col-4"><div class="text-center"><strong>{{ fstats.median }}</strong><br><small class="text-muted">Median</small></div></div>{% endif %}
+        {% if fstats.std is defined %}<div class="col-md-2 col-4"><div class="text-center"><strong>{{ fstats.std }}</strong><br><small class="text-muted">Std</small></div></div>{% endif %}
+        {% if fstats.forecast_sum is defined %}<div class="col-md-2 col-4"><div class="text-center"><strong>{{ fstats.forecast_sum }}</strong><br><small class="text-muted">Sum</small></div></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('forecasting.results', dataset_id=dataset.id) }}" class="btn btn-primary">
+      <i class="fas fa-chart-line me-1"></i>View Full Results
+    </a>
+    <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='csv') }}" class="btn btn-outline-primary">
+      <i class="fas fa-download me-1"></i>Download CSV
+    </a>
+    <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='excel') }}" class="btn btn-outline-primary">
+      <i class="fas fa-file-excel me-1"></i>Download Excel
+    </a>
+    <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='pdf') }}" class="btn btn-outline-primary">
+      <i class="fas fa-file-pdf me-1"></i>Download PDF
+    </a>
+    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#forecastRerunModal">
+      <i class="fas fa-redo me-1"></i>Run Again
+    </button>
+  </div>
+</div>
+
+<div class="modal fade" id="forecastRerunModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirm Re-run</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-redo fa-3x text-warning mb-3"></i>
+        <p class="fw-bold mb-2">This will overwrite the existing results.</p>
+        <p class="text-muted small mb-0">All current forecasting results will be lost. This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="{{ url_for('forecasting.setup', dataset_id=dataset.id) }}" class="btn btn-danger">
+          <i class="fas fa-redo me-1"></i>Run Again
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

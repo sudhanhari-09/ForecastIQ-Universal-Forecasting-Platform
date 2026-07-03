@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Workflow Completed{% endblock %}
+{% block extra_css %}
+<style>
+.completion-card { border-radius: 1.5rem; border: 1px solid var(--border); background: var(--white); }
+.action-card { border-radius: var(--radius); transition: all 0.2s; border: 1px solid var(--border); cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.action-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); text-decoration: none; color: inherit; }
+.action-card .card-body { padding: 1.5rem; text-align: center; }
+.action-card i { font-size: 2rem; margin-bottom: 0.75rem; }
+</style>
+{% endblock %}
+{% block content %}
+{% set r = report %}
+<div class="container py-4">
+    <div class="card completion-card mb-4">
+        <div class="card-body text-center py-5">
+            <div class="display-1 text-primary mb-2"><i class="fas fa-check-circle"></i></div>
+            <h2 class="fw-bold mb-2">ForecastIQ Workflow Completed</h2>
+            <p class="text-muted mb-1">All 6 stages completed for <strong>{{ dataset.file_name }}</strong></p>
+            <p class="text-muted mb-0 small">{{ now.strftime('%B %d, %Y at %I:%M %p') if now else '' }}</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-box">
+                <i class="fas fa-check-circle mb-2 d-block" style="font-size:1.5rem;color:var(--primary);"></i>
+                <h4 class="fw-bold">{{ dataset.file_name }}</h4>
+                <small class="stat-label">Dataset Processed Successfully</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-box">
+                <i class="fas fa-check-circle mb-2 d-block" style="font-size:1.5rem;color:var(--primary);"></i>
+                <h4 class="fw-bold">{{ r.get('best_model', 'N/A') }}</h4>
+                <small class="stat-label">Best Model</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-box">
+                <i class="fas fa-check-circle mb-2 d-block" style="font-size:1.5rem;color:var(--primary);"></i>
+                <h4 class="fw-bold">{{ r.get('workflow_time', 'N/A') }} min</h4>
+                <small class="stat-label">Total Workflow Time</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-box">
+                <i class="fas fa-check-circle mb-2 d-block" style="font-size:1.5rem;color:var(--primary);"></i>
+                <h4 class="fw-bold">Report Generated</h4>
+                <small class="stat-label">Report Generated</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 fw-bold section-title"><i class="fas fa-list-check me-2"></i>Workflow Summary</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="px-3">Step</th>
+                            <th class="px-3">Status</th>
+                            <th class="px-3">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in r.get('steps_summary', []) %}
+                        <tr>
+                            <td class="px-3"><span class="fw-medium">{{ s.number }}. {{ s.name }}</span></td>
+                            <td class="px-3">
+                                {% if s.detail %}
+                                <span class="badge-status"><i class="fas fa-check me-1"></i>Completed</span>
+                                {% else %}
+                                <span class="badge-status">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 text-muted small">{{ s.detail or '' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <a href="{{ url_for('reports.view_report', dataset_id=dataset.id) }}" class="action-card">
+                <div class="card-body">
+                    <i class="fas fa-file-alt" style="color:var(--primary);"></i>
+                    <h6 class="fw-bold mb-1">View Reports</h6>
+                    <small class="text-muted">Full report with all summaries</small>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='pdf') }}" class="action-card">
+                <div class="card-body">
+                    <i class="fas fa-download" style="color:var(--primary);"></i>
+                    <h6 class="fw-bold mb-1">Download Report</h6>
+                    <small class="text-muted">PDF, CSV or Excel format</small>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('dataset.upload') }}" class="action-card">
+                <div class="card-body">
+                    <i class="fas fa-plus-circle" style="color:var(--primary);"></i>
+                    <h6 class="fw-bold mb-1">Analyze Another Dataset</h6>
+                    <small class="text-muted">Start a new workflow</small>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('auth.dashboard') }}" class="action-card">
+                <div class="card-body">
+                    <i class="fas fa-tachometer-alt" style="color:var(--primary);"></i>
+                    <h6 class="fw-bold mb-1">Back to Dashboard</h6>
+                    <small class="text-muted">View your analysis history</small>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

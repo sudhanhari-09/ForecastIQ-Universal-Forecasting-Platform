@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}Validation Dashboard - {{ dataset.file_name }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
+            <li class="breadcrumb-item active">{{ dataset.file_name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold">
+                <i class="fas fa-clipboard-check text-primary me-2"></i>Validation Dashboard
+            </h2>
+            <p class="text-muted mb-0">
+                Dataset: <strong>{{ dataset.file_name }}</strong>
+                {% if report.created_at %}
+                &mdash; Validated {{ report.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="stat-card-value">{{ report.total_rows }}</div>
+                    <div class="stat-card-label mt-1">Total Rows</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="stat-card-value">{{ report.total_columns }}</div>
+                    <div class="stat-card-label mt-1">Total Columns</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="stat-card-value">{{ total_missing }}</div>
+                    <div class="stat-card-label mt-1">Missing Values</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="stat-card-value">{{ failed_checks }}</div>
+                    <div class="stat-card-label mt-1">Failed Checks</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold section-title">
+                        <i class="fas fa-info-circle me-2"></i>Dataset Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <small class="text-muted d-block">Dataset Name</small>
+                            <strong>{{ dataset.file_name }}</strong>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted d-block">File Type</small>
+                            <strong>{{ dataset.file_name.rsplit('.', 1)[1]|upper if '.' in dataset.file_name else 'N/A' }}</strong>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted d-block">File Size</small>
+                            <strong>
+                                {% if dataset.file_size < 1024 %}
+                                    {{ dataset.file_size }} B
+                                {% elif dataset.file_size < 1048576 %}
+                                    {{ (dataset.file_size / 1024)|round(1) }} KB
+                                {% else %}
+                                    {{ (dataset.file_size / 1048576)|round(2) }} MB
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted d-block">Total Rows</small>
+                            <strong>{{ dataset.rows_count }}</strong>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted d-block">Total Columns</small>
+                            <strong>{{ dataset.columns_count }}</strong>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted d-block">Upload Time</small>
+                            <strong>{{ dataset.upload_date.strftime('%Y-%m-%d %H:%M:%S') if dataset.upload_date else 'N/A' }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold section-title">
+                        <i class="fas fa-table me-2"></i>Dataset Preview
+                    </h5>
+                    <span class="small text-muted">First {{ data|length if data else 0 }} rows</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if columns and data %}
+                    <div class="table-responsive" style="max-height:400px;">
+                        <table class="table table-striped table-sm mb-0">
+                            <thead class="sticky-top">
+                                <tr>
+                                    <th class="px-3">#</th>
+                                    {% for col in columns %}
+                                    <th class="px-3">
+                                        {{ col }}
+                                        <br><small class="text-muted fw-normal">{{ dtypes.get(col, '') }}</small>
+                                    </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in data %}
+                                <tr>
+                                    <td class="text-muted px-3 small">{{ loop.index }}</td>
+                                    {% for cell in row %}
+                                    <td class="px-3 small">{% if cell.strftime is defined and cell is not string %}{{ cell.strftime('%Y-%m-%d %H:%M') }}{% else %}{{ cell }}{% endif %}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle fa-3x text-secondary mb-3"></i>
+                        <p class="text-muted">Unable to preview this dataset.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold section-title">
+                        <i class="fas fa-clipboard-list me-2"></i>Validation Report
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3 text-center">
+                            <small class="text-muted d-block">Overall Status</small>
+                            {% if report.validation_status == 'completed' %}
+                            <span class="badge-status mt-1">
+                                <i class="fas fa-check-circle"></i>Completed
+                            </span>
+                            {% elif report.validation_status == 'failed' %}
+                            <span class="badge-status badge-danger mt-1">
+                                <i class="fas fa-times-circle"></i>Failed
+                            </span>
+                            {% else %}
+                            <span class="badge-status mt-1">
+                                <i class="fas fa-clock"></i>Pending
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <small class="text-muted d-block">Validation Score</small>
+                            <div class="mt-1">
+                                <span class="fw-bold fs-4 {% if validation_score >= 80 %}text-primary{% elif validation_score >= 50 %}text-secondary{% else %}text-danger{% endif %}">
+                                    {{ validation_score }}%
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <small class="text-muted d-block">Passed Checks</small>
+                            <strong class="fs-4 text-primary mt-1 d-block">{{ passed_checks }}</strong>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <small class="text-muted d-block">Failed Checks</small>
+                            <strong class="fs-4 text-danger mt-1 d-block">{{ failed_checks }}</strong>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <small class="text-muted d-block">Warnings</small>
+                            <strong class="fs-4 text-secondary mt-1 d-block">{{ warnings_count }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold section-title">
+                        <i class="fas fa-chart-pie me-2"></i>Data Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Numeric Columns</small>
+                            <strong class="fs-5">{{ numeric_columns|length }}</strong>
+                            {% if numeric_columns %}
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for col in numeric_columns %}
+                                <span class="badge-tag badge-tag-primary">{{ col }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Categorical Columns</small>
+                            <strong class="fs-5">{{ categorical_columns|length }}</strong>
+                            {% if categorical_columns %}
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for col in categorical_columns %}
+                                <span class="badge-tag badge-tag-primary">{{ col }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Date Columns</small>
+                            <strong class="fs-5">{{ date_columns|length }}</strong>
+                            {% if date_columns %}
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for col in date_columns %}
+                                <span class="badge-tag badge-tag-primary">{{ col }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Duplicate Rows</small>
+                            <strong class="fs-5 {% if report.duplicate_rows > 0 %}text-danger{% endif %}">{{ report.duplicate_rows }}</strong>
+                            <br>
+                            <small class="text-muted d-block mt-2">Missing Values</small>
+                            <strong class="fs-5 {% if total_missing > 0 %}text-danger{% endif %}">{{ total_missing }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold section-title">
+                        <i class="fas fa-columns me-2"></i>Column Summary
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="px-3">Column Name</th>
+                                        <th class="px-3">Data Type</th>
+                                        <th class="text-center px-3">Missing Count</th>
+                                        <th class="text-center px-3">Missing %</th>
+                                        <th class="text-center px-3">Unique Values</th>
+                                        <th class="px-3">Example Value</th>
+                                    </tr>
+                                </thead>
+                            <tbody>
+                                {% for col in columns %}
+                                {% set mv = missing_map.get(col, {'count': 0, 'percentage': 0}) %}
+                                {% set cs = column_stats.get(col, {'unique_count': 0, 'example_value': ''}) %}
+                                <tr>
+                                    <td class="px-3 fw-medium">{{ col }}</td>
+                                    <td class="px-3">
+                                        {% set dt = column_types.get(col, 'unknown') %}
+                                        {% if dt == 'numeric' %}
+                                        <span class="badge-tag badge-tag-primary">{{ dt }}</span>
+                                        {% elif dt == 'categorical' %}
+                                        <span class="badge-tag badge-tag-primary">{{ dt }}</span>
+                                        {% elif dt == 'date' %}
+                                        <span class="badge-tag badge-tag-primary">{{ dt }}</span>
+                                        {% elif dt == 'text' %}
+                                        <span class="badge-tag">{{ dt }}</span>
+                                        {% else %}
+                                        <span class="badge-tag">{{ dt }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center px-3">{{ mv['count'] }}</td>
+                                    <td class="text-center px-3">
+                                        {% if mv['count'] > 0 %}
+                                        <span class="badge-tag {{ 'badge-tag-danger' if mv['percentage'] > 20 else '' }}">
+                                            {{ mv['percentage'] }}%
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">0%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center px-3">{{ cs['unique_count'] }}</td>
+                                    <td class="px-3"><code style="font-size:0.8rem;">{{ cs['example_value'] }}</code></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold section-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Validation Issues
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if issues %}
+                    <div class="list-group list-group-flush">
+                        {% for issue in issues %}
+                        <div class="list-group-item px-0 d-flex align-items-start gap-3">
+                            {% if issue.type == 'error' %}
+                            <span class="badge-status badge-danger mt-1">Error</span>
+                            {% else %}
+                            <span class="badge-status mt-1">Warning</span>
+                            {% endif %}
+                            <span>{{ issue.message }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle fa-2x text-primary mb-2"></i>
+                        <p class="text-muted mb-0">No validation issues found.</p>
+                    </div>
+                    {% endif %}
+
+                    {% if recommendations %}
+                    <hr class="my-3">
+                    <h6 class="fw-bold text-muted mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>Recommendations
+                    </h6>
+                    <ul class="list-group list-group-flush">
+                        {% for rec in recommendations %}
+                        <li class="list-group-item px-0 py-2">
+                            <i class="fas fa-arrow-right me-2" style="color:var(--primary);"></i>{{ rec }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

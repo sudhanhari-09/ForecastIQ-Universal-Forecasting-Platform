@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% block title %}Forecast Results{% endblock %}
+{% block extra_css %}
+<style>
+.forecast-value { font-weight: 600; color: var(--text-primary); }
+.status-excellent { color: #059669; font-weight: 600; }
+.status-good { color: #2563EB; font-weight: 600; }
+.status-average { color: #D97706; font-weight: 600; }
+.status-poor { color: #DC2626; font-weight: 600; }
+.trend-up { color: #059669; }
+.trend-down { color: #DC2626; }
+.trend-stable { color: #6B7280; }
+.section-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 1.5rem; }
+.section-card .card-header { background: var(--white); border-bottom: 1px solid var(--border-light); padding: 1rem 1.25rem; }
+.section-card .card-body { padding: 1.25rem; }
+.stat-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 1.25rem; border: 1px solid var(--border); height: 100%; text-align: center; }
+.stat-card-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+.stat-card-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.25rem; }
+.insight-item { padding: 0.75rem 1rem; border-left: 3px solid var(--primary); background: var(--bg-body); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin-bottom: 0.75rem; }
+.insight-item strong { color: var(--text-primary); }
+.download-btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.table-responsive { max-height: 500px; overflow-y: auto; }
+.table thead th { position: sticky; top: 0; background: var(--white); z-index: 1; }
+.bucket-bar { height: 20px; border-radius: 4px; background: var(--primary); min-width: 2px; }
+</style>
+{% endblock %}
+{% block content %}
+{% set r = results %}
+{% set fs = r.get('forecast_summary', {}) %}
+{% set mm = r.get('model_metrics', {}) %}
+{% set ins = r.get('model_insights', {}) %}
+{% set old_ins = r.get('insights', {}) %}
+{% set best_model = r.get('best_model', 'N/A') %}
+{% set valid = r.get('validation', {}) %}
+
+<div class="container-fluid py-3 px-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.file_name }}</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('forecasting.setup', dataset_id=dataset.id) }}">Forecasting</a></li>
+      <li class="breadcrumb-item active">Results</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-chart-line text-primary me-2"></i>Forecast Results</h3>
+      <p class="text-muted mb-0">{{ dataset.file_name }} &mdash; Best Model: <strong>{{ best_model }}</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#forecastResultsRerunModal">
+        <i class="fas fa-redo me-1"></i>Run Again
+      </button>
+    </div>
+  </div>
+
+  {% if valid %}
+  <div class="alert alert-info py-2 small mb-3">
+    <i class="fas fa-check-circle me-1"></i>
+    Dataset #{{ valid.dataset_id }} | Forecast #{{ valid.forecast_id }} | Model: {{ valid.model }} | Testing: {{ valid.testing_count }} | Future: {{ valid.future_count }}
+  </div>
+  {% endif %}
+
+  <!-- SECTION 1: Summary Cards -->
+  <div class="row g-3 mb-4" id="section-summary">
+    <div class="col-md-2 col-6"><div class="stat-card"><div class="stat-card-value">{{ fs.get('best_model', 'N/A') }}</div><div class="stat-card-label">Best Model</div></div></div>
+    <div class="col-md-2 col-6"><div class="stat-card"><div class="stat-card-value">{{ fs.get('forecast_horizon', 0) }}</div><div class="stat-card-label">Forecast Horizon</div></div></div>
+    <div class="col-md-2 col-6"><div class="stat-card"><div class="stat-card-value">{{ fs.get('total_data_points', 0) }}</div><div class="stat-card-label">Data Points</div></div></div>
+    <div class="col-md-2 col-6"><div class="stat-card"><div class="stat-card-value">{{ fs.get('training_samples', 0) }}</div><div class="stat-card-label">Train Samples</div></div></div>
+    <div class="col-md-2 col-6"><div class="stat-card"><div class="stat-card-value">{{ fs.get('testing_samples', 0) }}</div><div class="stat-card-label">Test Samples</div></div></div>
+    <div class="col-md-2 col-6"><div class="stat-card"><div class="stat-card-value">{{ fs.get('target_column', 'N/A') }}</div><div class="stat-card-label">Target</div></div></div>
+  </div>
+
+  <!-- SECTION 2: Model Performance -->
+  <div class="section-card" id="section-performance">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-chart-bar text-primary me-2"></i>Model Performance</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Model</th>
+              <th>MAE</th>
+              <th>RMSE</th>
+              <th>MAPE (%)</th>
+              <th>SMAPE (%)</th>
+              <th>R²</th>
+              <th>Explained Var</th>
+              <th>Median AE</th>
+              <th>Max Error</th>
+              <th>Mean Error</th>
+              <th>Accuracy (%)</th>
+              <th>Train Time (s)</th>
+              <th>Pred Time (s)</th>
+              <th>Memory (KB)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mname, mres in r.get('models', {}).items() %}
+            {% set is_best = (mname == best_model) %}
+            <tr class="{{ 'table-primary' if is_best else '' }}">
+              <td class="fw-medium">{{ loop.index }}</td>
+              <td class="fw-medium">{{ mname }} {% if is_best %}<span class="badge bg-primary ms-1">Best</span>{% endif %}</td>
+              {% if mres.get('status') == 'success' and mres.get('metrics') %}
+                {% set met = mres['metrics'] %}
+                <td>{{ met.get('mae', 'N/A') }}</td>
+                <td>{{ met.get('rmse', 'N/A') }}</td>
+                <td>{{ met.get('mape', 'N/A') }}</td>
+                <td>{{ met.get('smape', 'N/A') }}</td>
+                <td>{{ met.get('r2', 'N/A') }}</td>
+                <td>{{ met.get('explained_variance', 'N/A') }}</td>
+                <td>{{ met.get('median_absolute_error', 'N/A') }}</td>
+                <td>{{ met.get('max_error', 'N/A') }}</td>
+                <td>{{ met.get('mean_error', 'N/A') }}</td>
+                <td class="fw-bold">{{ met.get('prediction_accuracy', 'N/A') }}%</td>
+                <td>{{ mres.get('training_time', 'N/A') }}</td>
+                <td>{{ mres.get('prediction_time', 'N/A') }}</td>
+                <td>{{ mres.get('memory_usage_kb', 'N/A') }}</td>
+              {% else %}
+                <td colspan="13" class="text-muted">{{ mres.get('error', 'Failed') }}</td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Actual vs Predicted Table -->
+  {% set actual_preds = r.get('actual_predictions', []) %}
+  {% if actual_preds %}
+  <div class="section-card" id="section-actual-predicted">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-table text-primary me-2"></i>Actual vs Predicted <span class="text-muted fw-normal small ms-2">({{ actual_preds|length }} test rows)</span></h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead>
+            <tr>
+              <th>#</th><th>Date</th><th>Actual</th><th>Predicted</th><th>Residual</th><th>Abs Error</th><th>% Error</th><th>Accuracy (%)</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in actual_preds %}
+            <tr>
+              <td>{{ row.index }}</td>
+              <td>{{ row.date }}</td>
+              <td class="forecast-value">{{ row.actual }}</td>
+              <td class="forecast-value">{{ row.predicted }}</td>
+              <td>{{ row.residual }}</td>
+              <td>{{ row.absolute_error }}</td>
+              <td>{{ row.percentage_error }}%</td>
+              <td class="fw-bold">{{ row.accuracy }}%</td>
+              <td class="status-{{ row.status|lower }}">{{ row.status }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 4: Future Forecast Table -->
+  {% set future_preds = r.get('future_predictions', []) %}
+  {% if future_preds %}
+  <div class="section-card" id="section-future">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-clock text-primary me-2"></i>Future Forecast <span class="text-muted fw-normal small ms-2">({{ future_preds|length }} periods)</span></h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead>
+            <tr>
+              <th>#</th><th>Forecast Date</th><th>Forecast Value</th>
+              {% if future_preds[0].get('confidence_available') %}<th>Lower CI (95%)</th><th>Upper CI (95%)</th><th>Prediction Interval</th><th>Confidence %</th>{% endif %}
+              <th>Trend</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in future_preds %}
+            <tr>
+              <td>{{ row.index }}</td>
+              <td>{{ row.date }}</td>
+              <td class="forecast-value">{{ row.value }}</td>
+              {% if row.get('confidence_available') %}
+              <td>{{ row.lower_confidence }}</td>
+              <td>{{ row.upper_confidence }}</td>
+              <td>{{ row.prediction_interval }}</td>
+              <td>{{ row.confidence_percentage }}%</td>
+              {% endif %}
+              <td class="trend-{{ row.trend|lower }}"><i class="fas fa-arrow-{{ 'up' if row.trend == 'Increasing' else 'down' if row.trend == 'Decreasing' else 'right' }} me-1"></i>{{ row.trend }}</td>
+              <td><span class="badge bg-secondary">{{ row.status }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 5: Forecast Statistics -->
+  {% set fstats = r.get('forecast_statistics', {}) %}
+  {% if fstats %}
+  <div class="section-card" id="section-statistics">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-calculator text-primary me-2"></i>Forecast Statistics</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% if fstats.minimum is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.minimum }}</div><div class="stat-card-label">Minimum</div></div></div>{% endif %}
+        {% if fstats.maximum is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.maximum }}</div><div class="stat-card-label">Maximum</div></div></div>{% endif %}
+        {% if fstats.average is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.average }}</div><div class="stat-card-label">Average</div></div></div>{% endif %}
+        {% if fstats.median is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.median }}</div><div class="stat-card-label">Median</div></div></div>{% endif %}
+        {% if fstats.std is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.std }}</div><div class="stat-card-label">Std Deviation</div></div></div>{% endif %}
+        {% if fstats.variance is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.variance }}</div><div class="stat-card-label">Variance</div></div></div>{% endif %}
+        {% if fstats.range is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.range }}</div><div class="stat-card-label">Range</div></div></div>{% endif %}
+        {% if fstats.first_forecast is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.first_forecast }}</div><div class="stat-card-label">First Forecast</div></div></div>{% endif %}
+        {% if fstats.last_forecast is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.last_forecast }}</div><div class="stat-card-label">Last Forecast</div></div></div>{% endif %}
+        {% if fstats.forecast_sum is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.forecast_sum }}</div><div class="stat-card-label">Forecast Sum</div></div></div>{% endif %}
+        {% if fstats.forecast_count is defined %}<div class="col-md-3 col-6"><div class="stat-card"><div class="stat-card-value">{{ fstats.forecast_count }}</div><div class="stat-card-label">Forecast Count</div></div></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 6: Error Analysis (Distribution) -->
+  {% set error_dist = r.get('error_distribution', []) %}
+  {% if error_dist %}
+  <div class="section-card" id="section-error">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-chart-pie text-primary me-2"></i>Error Distribution</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr><th>Error Range</th><th>Count</th><th>Percentage</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% set max_pct = error_dist|map(attribute='percentage')|max %}
+            {% for bucket in error_dist %}
+            <tr>
+              <td class="fw-medium">{{ bucket.range }}</td>
+              <td>{{ bucket.count }}</td>
+              <td>{{ bucket.percentage }}%</td>
+              <td style="width:40%;">
+                <div style="display:flex;align-items:center;">
+                  <div class="bucket-bar" style="width:{{ (bucket.percentage / max_pct * 100) if max_pct > 0 else 0 }}%;"></div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 7: Top Predictions -->
+  {% set top_preds = r.get('top_predictions', []) %}
+  {% if top_preds %}
+  <div class="section-card" id="section-top">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-arrow-up text-primary me-2"></i>Top Predictions</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead><tr><th>#</th><th>Date</th><th>Value</th><th>Confidence %</th></tr></thead>
+          <tbody>
+            {% for row in top_preds %}
+            <tr>
+              <td>{{ row.index }}</td>
+              <td>{{ row.date }}</td>
+              <td class="forecast-value">{{ row.value }}</td>
+              <td>{{ row.confidence }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 8: Lowest Predictions -->
+  {% set low_preds = r.get('lowest_predictions', []) %}
+  {% if low_preds %}
+  <div class="section-card" id="section-lowest">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-arrow-down text-primary me-2"></i>Lowest Predictions</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead><tr><th>#</th><th>Date</th><th>Value</th><th>Confidence %</th></tr></thead>
+          <tbody>
+            {% for row in low_preds %}
+            <tr>
+              <td>{{ row.index }}</td>
+              <td>{{ row.date }}</td>
+              <td class="forecast-value">{{ row.value }}</td>
+              <td>{{ row.confidence }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 9: Intelligent Insights -->
+  {% if ins %}
+  <div class="section-card" id="section-insights">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-primary me-2"></i>Intelligent Insights</h5>
+    </div>
+    <div class="card-body">
+      {% if ins.get('forecast_trend') %}
+      <div class="insight-item"><strong>Forecast Trend:</strong> {{ ins['forecast_trend'] }}</div>
+      {% endif %}
+      {% if ins.get('forecast_stability') %}
+      <div class="insight-item"><strong>Forecast Stability:</strong> {{ ins['forecast_stability'] }}</div>
+      {% endif %}
+      {% if ins.get('forecast_volatility') %}
+      <div class="insight-item"><strong>Forecast Volatility:</strong> {{ ins['forecast_volatility'] }}</div>
+      {% endif %}
+      {% if ins.get('seasonality') %}
+      <div class="insight-item"><strong>Seasonality:</strong> {{ ins['seasonality'] }}</div>
+      {% endif %}
+      {% if ins.get('prediction_reliability') %}
+      <div class="insight-item"><strong>Prediction Reliability:</strong> {{ ins['prediction_reliability'] }}</div>
+      {% endif %}
+      {% if ins.get('confidence_interpretation') %}
+      <div class="insight-item"><strong>Confidence Interpretation:</strong> {{ ins['confidence_interpretation'] }}</div>
+      {% endif %}
+      {% if ins.get('model_suitability') %}
+      <div class="insight-item"><strong>Model Suitability:</strong> {{ ins['model_suitability'] }}</div>
+      {% endif %}
+      {% if ins.get('business_recommendation') %}
+      <div class="insight-item"><strong>Business Recommendation:</strong> {{ ins['business_recommendation'] }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 10: Download Center -->
+  <div class="section-card" id="section-downloads">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-download text-primary me-2"></i>Download Center</h5>
+    </div>
+    <div class="card-body">
+      <p class="text-muted small mb-3">Download the complete forecast results in your preferred format. All downloads contain the same data shown above.</p>
+      <div class="download-btn-group">
+        <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='csv') }}" class="btn btn-outline-primary">
+          <i class="fas fa-file-csv me-1"></i>Download CSV
+        </a>
+        <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='excel') }}" class="btn btn-outline-primary">
+          <i class="fas fa-file-excel me-1"></i>Download Excel
+        </a>
+        <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='pdf') }}" class="btn btn-outline-primary">
+          <i class="fas fa-file-pdf me-1"></i>Download PDF
+        </a>
+        <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id, format='html') }}" class="btn btn-outline-primary">
+          <i class="fas fa-file-code me-1"></i>Download HTML
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal fade" id="forecastResultsRerunModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirm Re-run</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-redo fa-3x text-warning mb-3"></i>
+        <p class="fw-bold mb-2">This will overwrite the existing results.</p>
+        <p class="text-muted small mb-0">All current forecasting results will be lost. This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="{{ url_for('forecasting.setup', dataset_id=dataset.id) }}" class="btn btn-danger">
+          <i class="fas fa-redo me-1"></i>Run Again
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
+});
+</script>
+{% endblock %}
