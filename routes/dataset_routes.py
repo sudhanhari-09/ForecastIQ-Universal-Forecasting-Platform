@@ -18,34 +18,39 @@ dataset_bp = Blueprint('dataset', __name__)
 @login_required
 def upload():
     if request.method == 'POST':
+        dataset_name = request.form.get('dataset_name', '').strip()
+        if not dataset_name:
+            flash('Dataset Name is required.', 'danger')
+            return render_template('upload_dataset.html', dataset_name=dataset_name)
+
         if 'file' not in request.files:
             flash('No file selected.', 'danger')
-            return render_template('upload_dataset.html')
+            return render_template('upload_dataset.html', dataset_name=dataset_name)
 
         file = request.files['file']
         if not file.filename:
             flash('No file selected.', 'danger')
-            return render_template('upload_dataset.html')
+            return render_template('upload_dataset.html', dataset_name=dataset_name)
 
-        dataset, error = upload_dataset(file, session['user_id'])
+        dataset, error = upload_dataset(file, session['user_id'], dataset_name=dataset_name)
         if error:
             flash(error, 'danger')
             return render_template('upload_dataset.html')
 
         log_activity(
             session['user_id'], 'uploaded_dataset', 'dataset', dataset.id,
-            f'Uploaded {dataset.file_name} ({dataset.rows_count} rows, {dataset.columns_count} columns)'
+            f'Uploaded {dataset.dataset_name or dataset.file_name} ({dataset.rows_count} rows, {dataset.columns_count} columns)'
         )
 
         report = run_validation(dataset)
         if report.validation_status == 'failed':
             log_activity(session['user_id'], 'validation_failed', 'dataset', dataset.id,
-                         f'Validation failed for {dataset.file_name}')
+                         f'Validation failed for {dataset.dataset_name or dataset.file_name}')
             flash('Dataset uploaded but validation failed. The file may be corrupted.', 'danger')
         else:
             log_activity(session['user_id'], 'validation_completed', 'dataset', dataset.id,
-                         f'Validation completed for {dataset.file_name}')
-            flash(f'Dataset "{dataset.file_name}" uploaded and validated successfully! '
+                         f'Validation completed for {dataset.dataset_name or dataset.file_name}')
+            flash(f'Dataset "{dataset.dataset_name or dataset.file_name}" uploaded and validated successfully! '
                   f'({dataset.rows_count} rows, {dataset.columns_count} columns)', 'success')
             complete_step(dataset.id)
 
@@ -224,11 +229,11 @@ def validate(dataset_id):
     report = run_validation(dataset)
     if report.validation_status == 'failed':
         log_activity(session['user_id'], 'validation_failed', 'dataset', dataset_id,
-                     f'Validation failed for {dataset.file_name}')
+                     f'Validation failed for {dataset.dataset_name or dataset.file_name}')
         flash('Validation failed. The file may be corrupted.', 'danger')
     else:
         log_activity(session['user_id'], 'validation_completed', 'dataset', dataset_id,
-                     f'Validation completed for {dataset.file_name}')
+                     f'Validation completed for {dataset.dataset_name or dataset.file_name}')
         flash('Validation completed successfully!', 'success')
         complete_step(dataset_id)
 

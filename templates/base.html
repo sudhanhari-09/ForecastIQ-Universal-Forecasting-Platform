@@ -22,17 +22,25 @@
         </a>
     </div>
     <div class="topbar-right">
-        <span class="user-name d-none d-sm-inline">{{ session.get('username', 'User') }}</span>
-        <div class="avatar-sm">{{ session.get('username', 'U')[0]|upper }}</div>
+        <div class="dropdown user-dropdown">
+            <button class="btn user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="user-name d-none d-sm-inline">{{ session.get('username', 'User') }}</span>
+                <div class="avatar-sm">{{ session.get('username', 'U')[0]|upper }}</div>
+                <i class="fas fa-chevron-down dropdown-chevron"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+            </ul>
+        </div>
     </div>
 </nav>
 <aside class="app-sidebar" id="appSidebar">
     <nav class="sidebar-nav">
-        <div class="nav-section-title">Menu</div>
         <a href="{{ url_for('auth.dashboard') }}">
             <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
         </a>
-        <div class="nav-section-title">Datasets</div>
         <a href="{{ url_for('dataset.upload') }}">
             <i class="fas fa-upload"></i><span>Upload Dataset</span>
         </a>
@@ -40,14 +48,6 @@
             <i class="fas fa-list"></i><span>Upload History</span>
         </a>
     </nav>
-    <div class="sidebar-footer">
-        <a href="{{ url_for('auth.profile') }}">
-            <i class="fas fa-user"></i><span>Profile</span>
-        </a>
-        <a href="{{ url_for('auth.logout') }}">
-            <i class="fas fa-sign-out-alt"></i><span>Logout</span>
-        </a>
-    </div>
 </aside>
 <main class="app-main" id="appMain">
 {% else %}

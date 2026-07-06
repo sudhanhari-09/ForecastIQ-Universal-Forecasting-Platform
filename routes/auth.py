@@ -1,6 +1,8 @@
 import os
+import logging
 from flask import (Blueprint, render_template, request, make_response,
                    redirect, url_for, flash, session)
+from sqlalchemy import func
 from database import db
 from models.user_model import User
 from models.dataset_model import Dataset
@@ -8,6 +10,8 @@ from models.validation_report_model import ValidationReport
 from models.eda_report_model import EDAReport
 from services.activity_service import get_recent_activities
 from functools import wraps
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -58,19 +62,30 @@ def login():
             flash('Please enter both username/email and password.', 'danger')
             return render_template('login.html')
 
+        login_lower = username.lower()
+
         user = User.query.filter(
-            (User.username == username) | (User.email == username)
+            (func.lower(User.username) == login_lower) |
+            (func.lower(User.email) == login_lower)
         ).first()
 
-        if user and user.check_password(password):
-            session.permanent = True
-            session['user_id'] = user.id
-            session['username'] = user.username
-            flash(f'Welcome back, {user.username}!', 'success')
-            resp = make_response(redirect(url_for('auth.dashboard')))
-            return _no_cache(resp)
+        if not user:
+            logger.warning('Login failed: user not found for "%s"', username)
+            flash('Invalid username/email or password.', 'danger')
+            return render_template('login.html')
 
-        flash('Invalid username/email or password.', 'danger')
+        if not user.check_password(password):
+            logger.warning('Login failed: wrong password for user "%s" (id=%s)', user.username, user.id)
+            flash('Invalid username/email or password.', 'danger')
+            return render_template('login.html')
+
+        session.permanent = True
+        session['user_id'] = user.id
+        session['username'] = user.username
+        logger.info('Login successful: user="%s" (id=%s)', user.username, user.id)
+        flash(f'Welcome back, {user.username}!', 'success')
+        resp = make_response(redirect(url_for('auth.dashboard')))
+        return _no_cache(resp)
 
     return render_template('login.html')
 
@@ -82,7 +97,7 @@ def register():
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip()
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
 
@@ -109,9 +124,16 @@ def register():
             errors.append('Passwords do not match.')
 
         if not errors:
-            if User.query.filter_by(username=username).first():
+            existing_username = User.query.filter(
+                func.lower(User.username) == username.lower()
+            ).first()
+            if existing_username:
                 errors.append('Username already exists.')
-            if User.query.filter_by(email=email).first():
+
+            existing_email = User.query.filter(
+                func.lower(User.email) == email
+            ).first()
+            if existing_email:
                 errors.append('Email already registered.')
 
         if errors:
@@ -125,10 +147,14 @@ def register():
         try:
             db.session.add(user)
             db.session.commit()
+            logger.info('Registration successful: username="%s" email="%s" id=%s',
+                        username, email, user.id)
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('auth.login'))
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            logger.error('Registration failed for username="%s" email="%s": %s',
+                         username, email, str(e), exc_info=True)
             flash('An error occurred during registration. Please try again.', 'danger')
 
     return render_template('register.html')
@@ -172,7 +198,6 @@ def dashboard():
         Dataset, ForecastReport.dataset_id == Dataset.id
     ).filter(Dataset.user_id == uid).count()
 
-    from sqlalchemy import func
     best_models = db.session.query(
         AnalysisHistory.best_model,
         func.count(AnalysisHistory.id).label('count')

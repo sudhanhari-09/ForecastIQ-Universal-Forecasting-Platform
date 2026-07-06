@@ -371,6 +371,8 @@ def get_model_actual_predicted(dataset_id, model_name):
 
 
 def generate_comparison_csv(dataset_id):
+    from models.dataset_model import Dataset
+    dataset = Dataset.query.get(dataset_id)
     comparison = load_comparison_results(dataset_id)
     if not comparison:
         return None, 'No comparison results found.'
@@ -378,6 +380,8 @@ def generate_comparison_csv(dataset_id):
     rows = []
     for m in comparison.get('results_table', []):
         rows.append({
+            'Dataset Name': dataset.dataset_name or dataset.file_name if dataset else '',
+            'Dataset ID': dataset.dataset_id if dataset else '',
             'Rank': m.get('rank_label', '-'),
             'Model Name': m['name'],
             'Category': m.get('model_category', ''),
@@ -396,6 +400,8 @@ def generate_comparison_csv(dataset_id):
 
 
 def generate_comparison_excel(dataset_id):
+    from models.dataset_model import Dataset
+    dataset = Dataset.query.get(dataset_id)
     comparison = load_comparison_results(dataset_id)
     if not comparison:
         return None, 'No comparison results found.'
@@ -403,6 +409,8 @@ def generate_comparison_excel(dataset_id):
     rows = []
     for m in comparison.get('results_table', []):
         rows.append({
+            'Dataset Name': dataset.dataset_name or dataset.file_name if dataset else '',
+            'Dataset ID': dataset.dataset_id if dataset else '',
             'Rank': m.get('rank_label', '-'),
             'Model Name': m['name'],
             'Category': m.get('model_category', ''),
@@ -421,6 +429,8 @@ def generate_comparison_excel(dataset_id):
 
 
 def generate_comparison_pdf(dataset_id):
+    from models.dataset_model import Dataset
+    dataset = Dataset.query.get(dataset_id)
     comparison = load_comparison_results(dataset_id)
     if not comparison:
         return None, 'No comparison results found.'
@@ -436,7 +446,13 @@ def generate_comparison_pdf(dataset_id):
         styles = getSampleStyleSheet()
         elements = []
 
+        ds_name = dataset.dataset_name or dataset.file_name if dataset else ''
         elements.append(Paragraph('Model Comparison Report', styles['Title']))
+        elements.append(Spacer(1, 6))
+        elements.append(Paragraph(
+            f'<b>Dataset:</b> {ds_name} &nbsp;&nbsp; <b>Dataset ID:</b> {dataset.dataset_id if dataset else ""}',
+            styles['Normal']
+        ))
         elements.append(Spacer(1, 12))
 
         best = comparison.get('best_model', 'N/A')

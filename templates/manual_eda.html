@@ -5,15 +5,17 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.file_name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.dataset_name or dataset.file_name }}</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('eda.mode_selection', dataset_id=dataset.id) }}">EDA Mode</a></li>
             <li class="breadcrumb-item active">Manual EDA</li>
         </ol>
     </nav>
 
-    <div class="text-center mb-4">
-        <h2 class="fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>Manual EDA Configuration</h2>
-        <p class="text-muted">Select the analyses and visualizations you want to generate for <strong>{{ dataset.file_name }}</strong></p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>Manual EDA</h2>
+    </div>
+
+    <p class="text-muted">Select the analyses and visualizations you want to generate for <strong>{{ dataset.dataset_name or dataset.file_name }}</strong> <code class="small ms-1">{{ dataset.dataset_id }}</code></p>
     </div>
 
     <form method="POST" action="{{ url_for('eda.manual_eda', dataset_id=dataset.id) }}" id="manualEdaForm">

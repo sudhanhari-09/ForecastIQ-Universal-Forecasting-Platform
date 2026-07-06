@@ -18,8 +18,14 @@
                     </div>
                     <form method="POST" action="{{ url_for('dataset.upload') }}"
                           enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Dataset Name <span class="text-danger">*</span></label>
+                            <input type="text" name="dataset_name" id="datasetNameInput"
+                                   class="form-control" placeholder="Enter a name for your dataset"
+                                   value="{{ dataset_name or '' }}" required maxlength="255">
+                        </div>
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">Choose File</label>
+                            <label class="form-label fw-semibold">Dataset File <span class="text-danger">*</span></label>
                             <div class="upload-zone text-center p-5"
                                  id="dropZone">
                                 <i class="fas fa-cloud-upload-alt fa-4x mb-3" id="uploadIcon" style="color:var(--primary);"></i>
@@ -62,6 +68,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const uploadBtn = document.getElementById('uploadBtn');
     const dropText = document.getElementById('dropText');
     const uploadIcon = document.getElementById('uploadIcon');
+    const datasetNameInput = document.getElementById('datasetNameInput');
+
+    function checkFormValidity() {
+        const nameFilled = datasetNameInput.value.trim().length > 0;
+        const fileFilled = fileInput.files.length > 0;
+        uploadBtn.disabled = !(nameFilled && fileFilled);
+    }
+
+    datasetNameInput.addEventListener('input', checkFormValidity);
 
     dropZone.addEventListener('click', function () {
         fileInput.click();
@@ -98,18 +113,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!['csv', 'xls', 'xlsx'].includes(ext)) {
             alert('Invalid file type. Please select a CSV, XLS, or XLSX file.');
             fileInput.value = '';
+            checkFormValidity();
             return;
         }
         if (file.size > 50 * 1024 * 1024) {
             alert('File is too large. Maximum size is 50 MB.');
             fileInput.value = '';
+            checkFormValidity();
             return;
         }
         fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
         fileInfo.classList.remove('d-none');
         dropText.textContent = 'File selected';
         uploadIcon.className = 'fas fa-check-circle fa-4x text-primary mb-3';
-        uploadBtn.disabled = false;
+        checkFormValidity();
     }
 });
 </script>

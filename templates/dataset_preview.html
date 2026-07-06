@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dataset: {{ dataset.file_name }}{% endblock %}
+{% block title %}Dataset: {{ dataset.dataset_name or dataset.file_name }}{% endblock %}
 {% block content %}
 <div class="container py-4">
     <nav aria-label="breadcrumb">
@@ -19,6 +19,14 @@
                 </div>
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Dataset Name</span>
+                            <strong>{{ dataset.dataset_name or dataset.file_name }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Dataset ID</span>
+                            <strong><code>{{ dataset.dataset_id }}</code></strong>
+                        </li>
                         <li class="list-group-item d-flex justify-content-between px-0">
                             <span class="text-muted">File Name</span>
                             <strong>{{ dataset.file_name }}</strong>

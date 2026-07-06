@@ -5,14 +5,14 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.file_name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.dataset_name or dataset.file_name }}</a></li>
             <li class="breadcrumb-item active">EDA Mode</li>
         </ol>
     </nav>
 
     <div class="text-center mb-5">
         <h2 class="fw-bold"><i class="fas fa-chart-pie text-primary me-2"></i>Exploratory Data Analysis</h2>
-        <p class="text-muted">Choose how you want to analyze <strong>{{ dataset.file_name }}</strong></p>
+        <p class="text-muted">Choose how you want to analyze <strong>{{ dataset.dataset_name or dataset.file_name }}</strong> <code class="small ms-1">{{ dataset.dataset_id }}</code></p>
     </div>
 
     <div class="row g-4 justify-content-center">

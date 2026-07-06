@@ -305,7 +305,9 @@ def download_forecast(dataset_id):
             styles = getSampleStyleSheet()
             elements = []
 
-            elements.append(Paragraph(f'Forecast Results — {dataset.file_name}', styles['Title']))
+            ds_name = dataset.dataset_name or dataset.file_name
+            elements.append(Paragraph(f'Forecast Results — {ds_name}', styles['Title']))
+            elements.append(Paragraph(f'<b>Dataset ID:</b> {dataset.dataset_id}', styles['Normal']))
             elements.append(Spacer(1, 12))
 
             best = results_data.get('best_model', 'N/A')
@@ -361,9 +363,10 @@ def download_forecast(dataset_id):
             if insights_html:
                 insights_html = f'<div class="section"><h2>Intelligent Insights</h2>{insights_html}</div>'
 
+        ds_name = dataset.dataset_name or dataset.file_name
         html_content = f'''<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>Forecast Results — {dataset.file_name}</title>
+<title>Forecast Results — {ds_name}</title>
 <style>
   body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #333; }}
   h1 {{ color: #2563EB; border-bottom: 2px solid #2563EB; padding-bottom: 10px; }}
@@ -379,8 +382,8 @@ def download_forecast(dataset_id):
   .stat-value {{ font-size: 1.4rem; font-weight: 700; color: #111827; }}
   .stat-label {{ font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }}
 </style></head><body>
-<h1>Forecast Results — {dataset.file_name}</h1>
-<p>Best Model: <strong>{results_data.get("best_model", "N/A")}</strong> | Target: {results_data.get("target_column", "N/A")} | Horizon: {results_data.get("horizon", 0)} periods</p>
+<h1>Forecast Results — {ds_name}</h1>
+<p>Dataset ID: <strong>{dataset.dataset_id}</strong> | Best Model: <strong>{results_data.get("best_model", "N/A")}</strong> | Target: {results_data.get("target_column", "N/A")} | Horizon: {results_data.get("horizon", 0)} periods</p>
 
 <div class="section">
 <h2>Forecast Statistics</h2>

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import pandas as pd
 from flask import current_app
 from database import db
@@ -9,6 +10,20 @@ from utils.file_utils import allowed_file, save_uploaded_file
 
 def get_upload_folder():
     return current_app.config.get('UPLOAD_FOLDER', os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'uploads'))
+
+
+def generate_dataset_id():
+    today = datetime.utcnow().strftime('%Y%m%d')
+    prefix = f'DS-{today}-'
+    last = Dataset.query.filter(
+        Dataset.dataset_id.like(f'{prefix}%')
+    ).order_by(Dataset.dataset_id.desc()).first()
+    if last:
+        last_seq = int(last.dataset_id.split('-')[-1])
+        new_seq = last_seq + 1
+    else:
+        new_seq = 1
+    return f'{prefix}{new_seq:06d}'
 
 
 def read_dataframe(file_path, extension, nrows=None):
@@ -22,12 +37,16 @@ def read_dataframe(file_path, extension, nrows=None):
         return None
 
 
-def upload_dataset(file, user_id):
+def upload_dataset(file, user_id, dataset_name=None):
     if not file or not allowed_file(file.filename):
         return None, 'Invalid file type. Allowed: CSV, XLS, XLSX.'
 
     upload_folder = get_upload_folder()
     os.makedirs(upload_folder, exist_ok=True)
+
+    if not dataset_name or not dataset_name.strip():
+        dataset_name = os.path.splitext(file.filename)[0]
+    dataset_name = dataset_name.strip()
 
     file_info = save_uploaded_file(file, upload_folder)
     extension = file_info['extension']
@@ -41,8 +60,12 @@ def upload_dataset(file, user_id):
         os.remove(file_info['file_path'])
         return None, 'Uploaded file is empty.'
 
+    dataset_id = generate_dataset_id()
+
     dataset = Dataset(
         user_id=user_id,
+        dataset_name=dataset_name,
+        dataset_id=dataset_id,
         file_name=file_info['original_name'],
         file_path=file_info['file_path'],
         file_size=file_info['file_size'],

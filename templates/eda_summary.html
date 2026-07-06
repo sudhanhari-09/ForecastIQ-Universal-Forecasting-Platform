@@ -5,7 +5,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.file_name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.dataset_name or dataset.file_name }}</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('eda.eda_dashboard', dataset_id=dataset.id) }}">EDA Dashboard</a></li>
             <li class="breadcrumb-item active">Summary</li>
         </ol>

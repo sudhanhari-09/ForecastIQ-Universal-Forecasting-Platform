@@ -38,7 +38,7 @@
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
-      <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.file_name }}</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.dataset_name or dataset.file_name }}</a></li>
       <li class="breadcrumb-item"><a href="{{ url_for('forecasting.setup', dataset_id=dataset.id) }}">Forecasting</a></li>
       <li class="breadcrumb-item active">Results</li>
     </ol>
@@ -47,7 +47,7 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h3 class="fw-bold mb-0"><i class="fas fa-chart-line text-primary me-2"></i>Forecast Results</h3>
-      <p class="text-muted mb-0">{{ dataset.file_name }} &mdash; Best Model: <strong>{{ best_model }}</strong></p>
+      <p class="text-muted mb-0">{{ dataset.dataset_name or dataset.file_name }} <code class="small ms-1">{{ dataset.dataset_id }}</code> &mdash; Best Model: <strong>{{ best_model }}</strong></p>
     </div>
     <div class="d-flex gap-2">
       <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#forecastResultsRerunModal">
@@ -59,7 +59,7 @@
   {% if valid %}
   <div class="alert alert-info py-2 small mb-3">
     <i class="fas fa-check-circle me-1"></i>
-    Dataset #{{ valid.dataset_id }} | Forecast #{{ valid.forecast_id }} | Model: {{ valid.model }} | Testing: {{ valid.testing_count }} | Future: {{ valid.future_count }}
+    Dataset: {{ dataset.dataset_name or dataset.file_name }} ({{ dataset.dataset_id }}) | Forecast #{{ valid.forecast_id }} | Model: {{ valid.model }} | Testing: {{ valid.testing_count }} | Future: {{ valid.future_count }}
   </div>
   {% endif %}
 

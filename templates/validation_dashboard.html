@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Validation Dashboard - {{ dataset.file_name }}{% endblock %}
+{% block title %}Validation Dashboard - {{ dataset.dataset_name or dataset.file_name }}{% endblock %}
 {% block content %}
 <div class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
-            <li class="breadcrumb-item active">{{ dataset.file_name }}</li>
+            <li class="breadcrumb-item active">{{ dataset.dataset_name or dataset.file_name }}</li>
         </ol>
     </nav>
 
@@ -15,7 +15,7 @@
                 <i class="fas fa-clipboard-check text-primary me-2"></i>Validation Dashboard
             </h2>
             <p class="text-muted mb-0">
-                Dataset: <strong>{{ dataset.file_name }}</strong>
+                Dataset: <strong>{{ dataset.dataset_name or dataset.file_name }}</strong> <code class="small ms-1">{{ dataset.dataset_id }}</code>
                 {% if report.created_at %}
                 &mdash; Validated {{ report.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                 {% endif %}
@@ -68,9 +68,13 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <small class="text-muted d-block">Dataset Name</small>
-                            <strong>{{ dataset.file_name }}</strong>
+                            <strong>{{ dataset.dataset_name or dataset.file_name }}</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Dataset ID</small>
+                            <strong><code>{{ dataset.dataset_id }}</code></strong>
                         </div>
                         <div class="col-md-2">
                             <small class="text-muted d-block">File Type</small>
@@ -89,14 +93,6 @@
                             </strong>
                         </div>
                         <div class="col-md-2">
-                            <small class="text-muted d-block">Total Rows</small>
-                            <strong>{{ dataset.rows_count }}</strong>
-                        </div>
-                        <div class="col-md-2">
-                            <small class="text-muted d-block">Total Columns</small>
-                            <strong>{{ dataset.columns_count }}</strong>
-                        </div>
-                        <div class="col-12">
                             <small class="text-muted d-block">Upload Time</small>
                             <strong>{{ dataset.upload_date.strftime('%Y-%m-%d %H:%M:%S') if dataset.upload_date else 'N/A' }}</strong>
                         </div>

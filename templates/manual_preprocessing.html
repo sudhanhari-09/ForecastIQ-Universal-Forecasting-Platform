@@ -4,7 +4,7 @@
 <div class="container py-4">
     <div class="text-center mb-4">
         <h2 class="fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>Manual Preprocessing</h2>
-        <p class="text-muted">Configure preprocessing steps for <strong>{{ dataset.file_name }}</strong></p>
+        <p class="text-muted">Configure preprocessing steps for <strong>{{ dataset.dataset_name or dataset.file_name }}</strong> <code class="small ms-1">{{ dataset.dataset_id }}</code></p>
     </div>
     <form method="POST" action="{{ url_for('preprocessing.manual_preprocessing', dataset_id=dataset.id) }}" id="prepForm">
         <div class="row g-4">

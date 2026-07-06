@@ -7,6 +7,8 @@ class Dataset(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dataset_name = db.Column(db.String(255), nullable=False, default='')
+    dataset_id = db.Column(db.String(50), unique=True, nullable=False, default='')
     file_name = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(512), nullable=False)
     file_size = db.Column(db.Integer, default=0)
@@ -25,6 +27,8 @@ class Dataset(db.Model):
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'dataset_name': self.dataset_name,
+            'dataset_id': self.dataset_id,
             'file_name': self.file_name,
             'file_size': self.file_size,
             'rows_count': self.rows_count,
@@ -33,4 +37,4 @@ class Dataset(db.Model):
         }
 
     def __repr__(self):
-        return f'<Dataset {self.file_name}>'
+        return f'<Dataset {self.dataset_name} ({self.dataset_id})>'

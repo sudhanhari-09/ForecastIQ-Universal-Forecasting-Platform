@@ -16,7 +16,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-1"><i class="fas fa-file-alt text-primary me-2"></i>Reports Dashboard</h3>
-            <p class="text-muted mb-0">{{ dataset.file_name }} &mdash; {{ r.get('generated_at', '') }}</p>
+            <p class="text-muted mb-0">{{ dataset.dataset_name or dataset.file_name }} <code class="small ms-1">{{ dataset.dataset_id }}</code> &mdash; {{ r.get('generated_at', '') }}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='pdf') }}" class="btn btn-danger">
@@ -36,7 +36,10 @@
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
-            <div class="stat-box"><h3>{{ dataset.file_name }}</h3><small>Dataset Name</small></div>
+            <div class="stat-box"><h3>{{ dataset.dataset_name or dataset.file_name }}</h3><small>Dataset Name</small></div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-box"><h3><code>{{ dataset.dataset_id }}</code></h3><small>Dataset ID</small></div>
         </div>
         <div class="col-md-3 col-6">
             <div class="stat-box"><h3>{{ r.get('dataset_rows', 0) }}</h3><small>Total Rows</small></div>

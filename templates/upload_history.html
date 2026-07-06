@@ -21,6 +21,8 @@
                 <thead>
                     <tr>
                         <th>#</th>
+                        <th>Dataset Name</th>
+                        <th>Dataset ID</th>
                         <th>File Name</th>
                         <th class="text-center">Rows</th>
                         <th class="text-center">Columns</th>
@@ -35,12 +37,16 @@
                     <tr>
                         <td class="text-muted">{{ ds.id }}</td>
                         <td>
+                            <a href="{{ url_for('dataset.detail', dataset_id=ds.id) }}" class="text-decoration-none fw-medium">
+                                {{ ds.dataset_name or ds.file_name }}
+                            </a>
+                        </td>
+                        <td><code class="small">{{ ds.dataset_id }}</code></td>
+                        <td>
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-file-{{ 'csv' if ds.file_name.endswith('.csv') else 'excel' }} me-2 fa-lg" style="color:var(--primary);"></i>
                                 <div>
-                                    <a href="{{ url_for('dataset.detail', dataset_id=ds.id) }}" class="text-decoration-none fw-medium">
-                                        {{ ds.file_name }}
-                                    </a>
+                                    <span class="small text-muted">{{ ds.file_name }}</span>
                                 </div>
                             </div>
                         </td>

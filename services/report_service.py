@@ -264,7 +264,8 @@ def generate_full_report(dataset_id):
 
     context = {
         'dataset_id': dataset_id,
-        'dataset_name': dataset.file_name,
+        'dataset_name': dataset.dataset_name or dataset.file_name,
+        'dataset_id_display': dataset.dataset_id,
         'dataset_rows': dataset.rows_count,
         'dataset_columns': dataset.columns_count,
         'upload_date': dataset.upload_date.strftime('%B %d, %Y') if dataset.upload_date else 'N/A',
@@ -349,7 +350,7 @@ def save_analysis_history(dataset_id, user_id):
     entry = AnalysisHistory(
         dataset_id=dataset_id,
         user_id=user_id,
-        dataset_name=dataset.file_name,
+        dataset_name=dataset.dataset_name or dataset.file_name,
         best_model=comp.best_model if comp else None,
         forecast_model=fc.model_name if fc else None,
         forecast_horizon=fc.forecast_horizon if fc else None,
@@ -371,6 +372,8 @@ def generate_report_csv(dataset_id):
     if context.get('results_table'):
         for m in context['results_table']:
             rows.append({
+                'Dataset Name': context.get('dataset_name', ''),
+                'Dataset ID': context.get('dataset_id_display', ''),
                 'Rank': m.get('rank_label', '-'),
                 'Model Name': m['name'],
                 'Category': m.get('model_category', ''),
@@ -438,6 +441,7 @@ def generate_report_pdf(dataset_id):
         elements.append(Spacer(1, 6))
         elements.append(Paragraph(
             f'<b>Dataset:</b> {context.get("dataset_name", "")} &nbsp;&nbsp;'
+            f'<b>Dataset ID:</b> {context.get("dataset_id_display", "")} &nbsp;&nbsp;'
             f'<b>Generated:</b> {context.get("generated_at", "")}',
             styles['Normal']
         ))
