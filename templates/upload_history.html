@@ -1,122 +1,202 @@
 {% extends "base.html" %}
 {% block title %}Upload History{% endblock %}
+{% block extra_css %}
+<style>
+.filter-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem; }
+.filter-bar .form-control, .filter-bar .form-select { border-radius: var(--radius-sm); font-size: 0.82rem; padding: 0.35rem 0.65rem; border-color: var(--border); min-height: 34px; }
+.filter-bar .form-control:focus, .filter-bar .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 0.15rem rgba(37,99,235,0.12); }
+.filter-bar .search-wrap { flex: 1 1 200px; position: relative; min-width: 140px; }
+.filter-bar .search-wrap .form-control { padding-left: 2rem; }
+.filter-bar .search-wrap i { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.8rem; pointer-events: none; }
+.filter-bar .filter-group { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.filter-bar .filter-group label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; white-space: nowrap; }
+.date-range-wrap { display: flex; gap: 0.4rem; align-items: center; }
+.date-range-wrap input { width: 130px; }
+.pagination .page-link { border: none; color: var(--text-secondary); font-size: 0.82rem; padding: 0.3rem 0.6rem; border-radius: var(--radius-sm); margin: 0 1px; }
+.pagination .page-link:hover { background: var(--hover-bg); color: var(--text-primary); }
+.pagination .page-item.active .page-link { background: var(--primary); color: var(--white); }
+.pagination .page-item.disabled .page-link { opacity: 0.4; }
+.dataset-count { font-size: 0.85rem; color: var(--text-secondary); }
+@media (max-width: 767.98px) {
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-bar .search-wrap { flex: 1 1 auto; }
+    .filter-bar .filter-group { flex-wrap: wrap; }
+    .date-range-wrap input { width: 100%; }
+}
+#dataset-table-container { transition: opacity 0.15s ease; }
+#dataset-table-container.loading { opacity: 0.5; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="fw-bold mb-0">
                 <i class="fas fa-history text-primary me-2"></i>Upload History
             </h2>
-            <p class="text-muted mb-0">{{ total }} dataset{% if total != 1 %}s{% endif %} uploaded</p>
+            <p class="text-muted mb-0 dataset-count" id="datasetCount">{{ total }} dataset{% if total != 1 %}s{% endif %} uploaded</p>
         </div>
         <a href="{{ url_for('dataset.upload') }}" class="btn btn-primary">
             <i class="fas fa-plus me-2"></i>Upload New
         </a>
     </div>
 
+    <form id="filterForm" method="GET" action="{{ url_for('dataset.list_datasets') }}">
+        <div class="filter-bar">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" id="search" name="search" placeholder="Search by name or ID..." value="{{ search }}" autocomplete="off">
+            </div>
+
+            <div class="filter-group">
+                <label for="date_filter"><i class="far fa-calendar-alt me-1"></i>Date</label>
+                <select class="form-select" id="date_filter" name="date_filter">
+                    <option value="all" {{ 'selected' if date_filter == 'all' }}>All Dates</option>
+                    <option value="today" {{ 'selected' if date_filter == 'today' }}>Today</option>
+                    <option value="7days" {{ 'selected' if date_filter == '7days' }}>Last 7 Days</option>
+                    <option value="30days" {{ 'selected' if date_filter == '30days' }}>Last 30 Days</option>
+                    <option value="custom" {{ 'selected' if date_filter == 'custom' }}>Custom Range</option>
+                </select>
+                <div class="date-range-wrap" id="dateRangeWrap" style="{{ '' if date_filter == 'custom' else 'display:none;' }}">
+                    <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+                    <span class="text-muted small">to</span>
+                    <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label for="model_filter"><i class="fas fa-chart-line me-1"></i>Model</label>
+                <select class="form-select" id="model_filter" name="model_filter">
+                    <option value="">All Models</option>
+                    <option value="ARIMA" {{ 'selected' if model_filter == 'ARIMA' }}>ARIMA</option>
+                    <option value="SARIMA" {{ 'selected' if model_filter == 'SARIMA' }}>SARIMA</option>
+                    <option value="ExponentialSmoothing" {{ 'selected' if model_filter == 'ExponentialSmoothing' }}>Exponential Smoothing</option>
+                    <option value="LinearRegression" {{ 'selected' if model_filter == 'LinearRegression' }}>Linear Regression</option>
+                    <option value="RandomForest" {{ 'selected' if model_filter == 'RandomForest' }}>Random Forest</option>
+                    <option value="XGBoost" {{ 'selected' if model_filter == 'XGBoost' }}>XGBoost</option>
+                    <option value="LSTM" {{ 'selected' if model_filter == 'LSTM' }}>LSTM</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="status_filter"><i class="fas fa-clipboard-check me-1"></i>Status</label>
+                <select class="form-select" id="status_filter" name="status_filter">
+                    <option value="" {{ 'selected' if status_filter == '' }}>All</option>
+                    <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                    <option value="pending" {{ 'selected' if status_filter == 'pending' }}>In Progress</option>
+                    <option value="failed" {{ 'selected' if status_filter == 'failed' }}>Failed</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="sort"><i class="fas fa-sort me-1"></i>Sort</label>
+                <select class="form-select" id="sort" name="sort">
+                    <option value="newest" {{ 'selected' if sort == 'newest' }}>Newest First</option>
+                    <option value="oldest" {{ 'selected' if sort == 'oldest' }}>Oldest First</option>
+                    <option value="name_az" {{ 'selected' if sort == 'name_az' }}>Name (A-Z)</option>
+                    <option value="name_za" {{ 'selected' if sort == 'name_za' }}>Name (Z-A)</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
     {% if datasets %}
-    <div class="section-card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Dataset Name</th>
-                        <th>Dataset ID</th>
-                        <th>File Name</th>
-                        <th class="text-center">Rows</th>
-                        <th class="text-center">Columns</th>
-                        <th>Size</th>
-                        <th>Upload Date</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ds in datasets %}
-                    <tr>
-                        <td class="text-muted">{{ ds.id }}</td>
-                        <td>
-                            <a href="{{ url_for('dataset.detail', dataset_id=ds.id) }}" class="text-decoration-none fw-medium">
-                                {{ ds.dataset_name or ds.file_name }}
-                            </a>
-                        </td>
-                        <td><code class="small">{{ ds.dataset_id }}</code></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-file-{{ 'csv' if ds.file_name.endswith('.csv') else 'excel' }} me-2 fa-lg" style="color:var(--primary);"></i>
-                                <div>
-                                    <span class="small text-muted">{{ ds.file_name }}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="text-center">{{ ds.rows_count }}</td>
-                        <td class="text-center">{{ ds.columns_count }}</td>
-                        <td>
-                            {% if ds.file_size < 1024 %}
-                                {{ ds.file_size }} B
-                            {% elif ds.file_size < 1048576 %}
-                                {{ (ds.file_size / 1024)|round(1) }} KB
-                            {% else %}
-                                {{ (ds.file_size / 1048576)|round(2) }} MB
-                            {% endif %}
-                        </td>
-                        <td class="small">{{ ds.upload_date.strftime('%Y-%m-%d %H:%M') if ds.upload_date else 'N/A' }}</td>
-                        <td class="text-center">
-                            {% set status = ds.validation_status if ds.validation_status is defined else 'pending' %}
-                            {% if status == 'completed' %}
-                                <span class="badge-status">
-                                    <i class="fas fa-check-circle"></i>Validated
-                                </span>
-                            {% elif status == 'failed' %}
-                                <span class="badge-status badge-danger">
-                                    <i class="fas fa-times-circle"></i>Failed
-                                </span>
-                            {% else %}
-                                <span class="badge-status">
-                                    <i class="fas fa-clock"></i>Pending
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('dataset.validation_dashboard', dataset_id=ds.id) }}"
-                                    class="btn btn-outline-primary" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% if not ds.validation_status or ds.validation_status == 'pending' %}
-                                <form method="POST" action="{{ url_for('dataset.validate', dataset_id=ds.id) }}"
-                                      class="d-inline" onsubmit="return confirm('Run validation on this dataset?')">
-                                    <button type="submit" class="btn btn-outline-primary" title="Validate">
-                                        <i class="fas fa-check-double"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                                <form method="POST" action="{{ url_for('dataset.delete', dataset_id=ds.id) }}"
-                                      class="d-inline" onsubmit="return confirm('Delete this dataset permanently?')">
-                                    <button type="submit" class="btn btn-outline-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="section-card" id="datasetTableContainer">
+        <div id="dataset-table-container">
+            {% include '_dataset_table.html' %}
         </div>
     </div>
     {% else %}
     <div class="section-card">
         <div class="card-body text-center py-5">
             <i class="fas fa-inbox fa-4x mb-3" style="opacity:0.2;color:var(--text-secondary);"></i>
-            <h5 class="text-muted">No datasets uploaded yet</h5>
-            <p class="text-muted small">Upload your first dataset to get started with forecasting.</p>
+            <h5 class="text-muted">No datasets match your filters</h5>
+            <p class="text-muted small">Try adjusting your search or filter criteria.</p>
+            {% if search or date_filter != 'all' or model_filter or status_filter %}
+            <a href="{{ url_for('dataset.list_datasets') }}" class="btn btn-outline-primary mt-2">
+                <i class="fas fa-times me-2"></i>Clear Filters
+            </a>
+            {% else %}
             <a href="{{ url_for('dataset.upload') }}" class="btn btn-primary mt-2">
                 <i class="fas fa-upload me-2"></i>Upload Dataset
             </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    var form = document.getElementById('filterForm');
+    var container = document.getElementById('dataset-table-container');
+    var searchInput = document.getElementById('search');
+    var dateFilter = document.getElementById('date_filter');
+    var dateRangeWrap = document.getElementById('dateRangeWrap');
+
+    function showLoading() {
+        container.classList.add('loading');
+    }
+
+    function hideLoading() {
+        container.classList.remove('loading');
+    }
+
+    function submitFilters() {
+        showLoading();
+        var params = new URLSearchParams(new FormData(form)).toString();
+        var url = form.action + '?' + params;
+        history.replaceState(null, '', url);
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                container.innerHTML = html;
+                hideLoading();
+                var countEl = document.getElementById('datasetCount');
+                if (countEl) {
+                    var showingEl = container.querySelector('.text-muted small');
+                    if (showingEl) {
+                        var m = showingEl.textContent.match(/of (\d+)/);
+                        if (m) countEl.textContent = m[1] + ' dataset' + (m[1] !== '1' ? 's' : '') + ' uploaded';
+                    }
+                }
+            })
+            .catch(function() { hideLoading(); location.reload(); });
+    }
+
+    var debounceTimer;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(submitFilters, 300);
+    });
+
+    form.querySelectorAll('select').forEach(function(sel) {
+        sel.addEventListener('change', function() {
+            if (sel.id === 'date_filter') {
+                dateRangeWrap.style.display = sel.value === 'custom' ? 'flex' : 'none';
+            }
+            submitFilters();
+        });
+    });
+
+    dateRangeWrap.querySelectorAll('input[type="date"]').forEach(function(inp) {
+        inp.addEventListener('change', submitFilters);
+    });
+
+    container.addEventListener('click', function(e) {
+        var link = e.target.closest('.page-link[data-page]');
+        if (link) {
+            e.preventDefault();
+            var pageInput = document.createElement('input');
+            pageInput.type = 'hidden';
+            pageInput.name = 'page';
+            pageInput.value = link.getAttribute('data-page');
+            form.appendChild(pageInput);
+            submitFilters();
+            form.removeChild(pageInput);
+        }
+    });
+})();
+</script>
 {% endblock %}

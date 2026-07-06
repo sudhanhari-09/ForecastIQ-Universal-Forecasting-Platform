@@ -1,10 +1,13 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 from flask import current_app
 from database import db
 from models.dataset_model import Dataset
 from models.user_model import User
+from models.forecast_report_model import ForecastReport
+from models.validation_report_model import ValidationReport
+from sqlalchemy import or_, and_, exists
 from utils.file_utils import allowed_file, save_uploaded_file
 
 
@@ -78,11 +81,74 @@ def upload_dataset(file, user_id, dataset_name=None):
     return dataset, None
 
 
-def get_user_datasets(user_id, page=1, per_page=20):
-    query = Dataset.query.filter_by(user_id=user_id).order_by(Dataset.upload_date.desc())
+def get_user_datasets(user_id, page=1, per_page=10, search='', sort='newest',
+                      date_filter='all', date_from='', date_to='',
+                      model_filter='', status_filter=''):
+    query = Dataset.query.filter_by(user_id=user_id)
+
+    if search:
+        query = query.filter(
+            or_(
+                Dataset.dataset_name.ilike(f'%{search}%'),
+                Dataset.dataset_id.ilike(f'%{search}%')
+            )
+        )
+
+    if date_filter == 'today':
+        query = query.filter(Dataset.upload_date >= datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0))
+    elif date_filter == '7days':
+        query = query.filter(Dataset.upload_date >= datetime.utcnow() - timedelta(days=7))
+    elif date_filter == '30days':
+        query = query.filter(Dataset.upload_date >= datetime.utcnow() - timedelta(days=30))
+    elif date_filter == 'custom':
+        if date_from:
+            query = query.filter(Dataset.upload_date >= datetime.strptime(date_from, '%Y-%m-%d'))
+        if date_to:
+            query = query.filter(Dataset.upload_date <= datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1))
+
+    if status_filter == 'completed':
+        subq = exists().where(
+            and_(ValidationReport.dataset_id == Dataset.id, ValidationReport.validation_status == 'completed')
+        )
+        query = query.filter(subq)
+    elif status_filter == 'failed':
+        subq = exists().where(
+            and_(ValidationReport.dataset_id == Dataset.id, ValidationReport.validation_status == 'failed')
+        )
+        query = query.filter(subq)
+    elif status_filter == 'pending':
+        subq = exists().where(
+            and_(ValidationReport.dataset_id == Dataset.id, ValidationReport.validation_status.in_(['completed', 'failed']))
+        )
+        query = query.filter(~subq)
+
+    if model_filter:
+        subq = exists().where(
+            and_(ForecastReport.dataset_id == Dataset.id, ForecastReport.model_name == model_filter)
+        )
+        query = query.filter(subq)
+
+    if sort == 'oldest':
+        query = query.order_by(Dataset.upload_date.asc())
+    elif sort == 'name_az':
+        query = query.order_by(Dataset.dataset_name.asc())
+    elif sort == 'name_za':
+        query = query.order_by(Dataset.dataset_name.desc())
+    else:
+        query = query.order_by(Dataset.upload_date.desc())
+
     total = query.count()
     datasets = query.offset((page - 1) * per_page).limit(per_page).all()
     return datasets, total
+
+
+def get_available_models(user_id):
+    subq = db.session.query(ForecastReport.dataset_id).filter(
+        Dataset.user_id == user_id,
+        Dataset.id == ForecastReport.dataset_id
+    ).exists()
+    results = db.session.query(ForecastReport.model_name).filter(subq).distinct().all()
+    return sorted([r[0] for r in results])
 
 
 def get_dataset(dataset_id, user_id):

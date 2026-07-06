@@ -1,10 +1,12 @@
 import json
+from math import ceil
 from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, session, current_app)
 from routes.auth import login_required
 from services.dataset_service import (
     upload_dataset, get_user_datasets, get_dataset,
-    delete_dataset, get_preview_data, get_column_detail_stats
+    delete_dataset, get_preview_data, get_column_detail_stats,
+    get_available_models
 )
 from services.validation_service import run_validation, get_report
 from services.activity_service import log_activity
@@ -63,13 +65,41 @@ def upload():
 @login_required
 def list_datasets():
     page = request.args.get('page', 1, type=int)
-    datasets, total = get_user_datasets(session['user_id'], page=page)
+    search = request.args.get('search', '')
+    sort = request.args.get('sort', 'newest')
+    date_filter = request.args.get('date_filter', 'all')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    model_filter = request.args.get('model_filter', '')
+    status_filter = request.args.get('status_filter', '')
+
+    datasets, total = get_user_datasets(
+        session['user_id'], page=page, search=search, sort=sort,
+        date_filter=date_filter, date_from=date_from, date_to=date_to,
+        model_filter=model_filter, status_filter=status_filter
+    )
 
     for ds in datasets:
         report = get_report(ds.id)
         ds.validation_status = report.validation_status if report else 'pending'
 
-    return render_template('upload_history.html', datasets=datasets, total=total, page=page)
+    available_models = get_available_models(session['user_id'])
+
+    per_page = 10
+    total_pages = max(1, ceil(total / per_page))
+    start_idx = (page - 1) * per_page + 1 if total > 0 else 0
+    end_idx = min(page * per_page, total)
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    template = 'upload_history.html' if not is_ajax else '_dataset_table.html'
+
+    return render_template(template,
+        datasets=datasets, total=total, page=page, per_page=per_page,
+        total_pages=total_pages, start_idx=start_idx, end_idx=end_idx,
+        search=search, sort=sort, date_filter=date_filter,
+        date_from=date_from, date_to=date_to,
+        model_filter=model_filter, status_filter=status_filter,
+        available_models=available_models)
 
 
 @dataset_bp.route('/dataset/<int:dataset_id>')

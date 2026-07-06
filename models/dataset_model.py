@@ -6,7 +6,7 @@ class Dataset(db.Model):
     __tablename__ = 'datasets'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     dataset_name = db.Column(db.String(255), nullable=False, default='')
     dataset_id = db.Column(db.String(50), unique=True, nullable=False, default='')
     file_name = db.Column(db.String(255), nullable=False)
@@ -15,7 +15,7 @@ class Dataset(db.Model):
     rows_count = db.Column(db.Integer, default=0)
     columns_count = db.Column(db.Integer, default=0)
     workflow_step = db.Column(db.Integer, default=1)
-    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
     validation_reports = db.relationship(
         'ValidationReport', backref='dataset',
