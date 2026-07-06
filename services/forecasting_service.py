@@ -547,9 +547,6 @@ def run_manual_forecasting(dataset_id, user_id, target_col, date_col,
     if error:
         return None, error
 
-    if not date_col:
-        date_col = '__row_index__'
-
     if date_col != '__row_index__' and date_col not in df.columns:
         return None, f'Date column "{date_col}" not found in dataset.'
     if target_col not in df.columns:

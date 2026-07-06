@@ -271,8 +271,8 @@ class TestForecastingService:
 
         results, error = run_manual_forecasting(ds.id, 1, target_col='target',
                                                  date_col='', horizon=5, test_ratio=0.2)
-        assert results is not None, f'Error: {error}'
-        assert results['date_column'] == '__row_index__'
+        assert results is None
+        assert error is not None
 
     def test_forecast_future_dates_int(self):
         from services.forecasting_service import _forecast_future_dates

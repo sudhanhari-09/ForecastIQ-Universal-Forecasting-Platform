@@ -132,6 +132,9 @@ def train(dataset_id):
         if not target_col:
             flash('Please select a target column.', 'warning')
             return redirect(url_for('forecasting.setup', dataset_id=dataset_id))
+        if not date_col:
+            flash('Please select a date column.', 'warning')
+            return redirect(url_for('forecasting.setup', dataset_id=dataset_id))
         results, error = run_manual_forecasting(
             dataset_id, session['user_id'],
             target_col=target_col, date_col=date_col,
@@ -273,7 +276,8 @@ def download_forecast(dataset_id):
 
     if fmt == 'csv':
         output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=rows[0].keys() if rows else [])
+        all_keys = list(dict.fromkeys(k for r in rows for k in r.keys())) if rows else []
+        writer = csv.DictWriter(output, fieldnames=all_keys)
         writer.writeheader()
         writer.writerows(rows)
         mem = io.BytesIO(output.getvalue().encode('utf-8'))
@@ -309,7 +313,7 @@ def download_forecast(dataset_id):
             elements.append(Spacer(1, 12))
 
             if rows:
-                headers = list(rows[0].keys())
+                headers = list(dict.fromkeys(k for r in rows for k in r.keys()))
                 table_data = [headers]
                 for r in rows:
                     table_data.append([str(r.get(h, '')) for h in headers])
