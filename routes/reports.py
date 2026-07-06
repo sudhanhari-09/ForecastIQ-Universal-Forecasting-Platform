@@ -1,6 +1,5 @@
-import os
-from flask import (Blueprint, current_app, render_template, request,
-                   redirect, url_for, flash, session, send_file, jsonify)
+from flask import (Blueprint, render_template,
+                   redirect, url_for, flash, session, send_file)
 from routes.auth import login_required
 from services.dataset_service import get_dataset
 from services.report_service import (
@@ -9,7 +8,7 @@ from services.report_service import (
     save_analysis_history
 )
 from services.activity_service import log_activity
-from services.model_download_service import validate_model_package, create_model_zip
+from services.model_download_service import validate_model_package, get_trained_model_info
 from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls, require_step_completion, complete_step
 from datetime import datetime
 
@@ -155,31 +154,14 @@ def download_trained_model(dataset_id):
         flash(f'Model download unavailable: {err}', 'danger')
         return redirect(url_for('reports.view_report', dataset_id=dataset_id))
 
-    buf, err = create_model_zip(dataset_id, dataset_name=dataset.file_name)
-    if err or buf is None:
-        flash(f'Failed to create model package: {err}', 'danger')
+    model_path, download_name, err = get_trained_model_info(dataset_id)
+    if err or model_path is None:
+        flash(f'Failed to download model: {err}', 'danger')
         return redirect(url_for('reports.view_report', dataset_id=dataset_id))
 
-    import json
-    model_dir = os.path.join(
-        current_app.config.get('PROCESSED_FOLDER', 'data/processed'),
-        '..', 'forecasts', str(dataset_id), 'trained_model'
-    )
-    model_dir = os.path.normpath(model_dir)
-    meta_path = os.path.join(model_dir, 'metadata.json')
-    zip_name = 'TrainedModel.zip'
-    if os.path.exists(meta_path):
-        try:
-            with open(meta_path, 'r') as f:
-                meta = json.load(f)
-            model_name = meta.get('forecast_model', 'Model')
-            zip_name = f'{model_name}_Model.zip'
-        except Exception:
-            pass
-
     return send_file(
-        buf,
-        mimetype='application/zip',
+        model_path,
+        mimetype='application/octet-stream',
         as_attachment=True,
-        download_name=zip_name
+        download_name=download_name
     )

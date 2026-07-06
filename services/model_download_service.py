@@ -232,6 +232,59 @@ the terms under which the original dataset was provided.
     return readme
 
 
+def _trim_statsmodels_model(model_obj):
+    _MAX_OBS = 100
+
+    if hasattr(model_obj, 'filter_results'):
+        fr = model_obj.filter_results
+        _ARRAYS = [
+            'filtered_state', 'filtered_state_cov',
+            'forecasts_error',
+            'standardized_forecasts_error', 'forecasts_error_cov',
+            'kalman_gain',
+        ]
+        for attr_name in _ARRAYS:
+            try:
+                arr = getattr(fr, attr_name, None)
+            except Exception:
+                continue
+            if isinstance(arr, np.ndarray) and arr.ndim >= 1 and arr.shape[-1] > _MAX_OBS:
+                try:
+                    slicing = [slice(None)] * (arr.ndim - 1) + [slice(-_MAX_OBS, None)]
+                    setattr(fr, attr_name, arr[tuple(slicing)].copy())
+                except Exception:
+                    pass
+
+    if hasattr(model_obj, 'smoother_results'):
+        sr = model_obj.smoother_results
+        for attr_name in ['smoothed_state', 'smoothed_state_cov', 'smoothed_state_autocov',
+                           'scaled_smoothed_estimator', 'scaled_smoothed_estimator_cov',
+                           'smoothing_error', 'smoothed_measurement_disturbance',
+                           'smoothed_state_disturbance', 'smoothed_measurement_disturbance_cov',
+                           'smoothed_state_disturbance_cov']:
+            try:
+                arr = getattr(sr, attr_name, None)
+            except Exception:
+                continue
+            if isinstance(arr, np.ndarray) and arr.ndim >= 1 and arr.shape[-1] > _MAX_OBS:
+                try:
+                    slicing = [slice(None)] * (arr.ndim - 1) + [slice(-_MAX_OBS, None)]
+                    setattr(sr, attr_name, arr[tuple(slicing)].copy())
+                except Exception:
+                    pass
+
+    for attr_name in ('level', 'trend', 'seasonal'):
+        try:
+            arr = getattr(model_obj, attr_name, None)
+        except Exception:
+            continue
+        if isinstance(arr, np.ndarray) and arr.ndim >= 1 and arr.shape[0] > _MAX_OBS:
+            try:
+                setattr(model_obj, attr_name, arr[-_MAX_OBS:].copy())
+            except Exception:
+                pass
+
+
 def save_trained_model(model_obj, dataset_id, model_name, target_column, date_column,
                        forecast_horizon, feature_columns, training_samples, testing_samples,
                        dataset_name, trained_model_extra=None):
@@ -291,6 +344,8 @@ def save_trained_model(model_obj, dataset_id, model_name, target_column, date_co
             pass
     else:
         pkl_path = os.path.join(model_dir, 'model.pkl')
+        if framework == 'statsmodels':
+            _trim_statsmodels_model(model_obj)
         joblib.dump(model_obj, pkl_path)
 
     preprocessor = {
@@ -368,6 +423,36 @@ def validate_model_package(dataset_id):
         return False, f'Metadata file corrupt: {str(e)}'
 
     return True, None
+
+
+def get_trained_model_info(dataset_id):
+    model_dir = _get_model_dir(dataset_id)
+    if not os.path.exists(model_dir):
+        return None, None, 'No trained model found.'
+
+    meta_path = os.path.join(model_dir, 'metadata.json')
+    if not os.path.exists(meta_path):
+        return None, None, 'Metadata file not found.'
+
+    with open(meta_path, 'r') as f:
+        meta = json.load(f)
+
+    framework = meta.get('framework', 'unknown')
+    model_name = meta.get('forecast_model', 'Model')
+
+    if framework == 'tensorflow':
+        model_file = 'model.keras'
+        ext = '.keras'
+    else:
+        model_file = 'model.pkl'
+        ext = '.pkl'
+
+    model_path = os.path.join(model_dir, model_file)
+    if not os.path.exists(model_path):
+        return None, None, f'Model file not found: {model_file}'
+
+    download_name = f'{model_name}_Model{ext}'
+    return model_path, download_name, None
 
 
 def create_model_zip(dataset_id, dataset_name=None):
