@@ -948,6 +948,11 @@ body {
 .g-4, .gy-4 { --bs-gutter-y: 1.5rem !important; }
 .g-4, .gx-4 { --bs-gutter-x: 1.5rem !important; }
 
+/* ===== Code Tag ===== */
+code {
+    color: #1E40AF;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 767.98px) {
     .app-sidebar {

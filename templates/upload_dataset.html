@@ -19,7 +19,7 @@
                     <form method="POST" action="{{ url_for('dataset.upload') }}"
                           enctype="multipart/form-data" id="uploadForm">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Dataset Name <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Experiment Name <span class="text-danger">*</span></label>
                             <input type="text" name="dataset_name" id="datasetNameInput"
                                    class="form-control" placeholder="Enter a name for your dataset"
                                    value="{{ dataset_name or '' }}" required maxlength="255">

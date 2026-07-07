@@ -92,10 +92,10 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3 col-6">
-                            <div class="stat-box"><h6 class="fw-bold mb-0 text-truncate">{{ dataset.dataset_name or dataset.file_name }}</h6><small class="stat-label">Dataset Name</small></div>
+                            <div class="stat-box"><h6 class="fw-bold mb-0 text-truncate">{{ dataset.dataset_name or dataset.file_name }}</h6><small class="stat-label">Experiment Name</small></div>
                         </div>
                         <div class="col-md-3 col-6">
-                            <div class="stat-box"><h6 class="fw-bold mb-0"><code style="font-size:0.85rem;">{{ dataset.dataset_id }}</code></h6><small class="stat-label">Dataset ID</small></div>
+                            <div class="stat-box"><h6 class="fw-bold mb-0"><code style="font-size:0.85rem;">{{ dataset.dataset_id }}</code></h6><small class="stat-label">Experiment ID</small></div>
                         </div>
                         <div class="col-md-3 col-6">
                             <div class="stat-box"><h4 class="fw-bold mb-0">{{ overview.get('rows', 0) }}</h4><small class="stat-label">Total Rows</small></div>
@@ -132,15 +132,15 @@
                             <div class="stat-box"><h4 class="fw-bold mb-0">{{ qs.get('duplicate_count', 0) }}</h4><small class="stat-label">Duplicate Rows</small></div>
                         </div>
                         <div class="col-md-2 col-6">
-                            <div class="stat-box"><h4 class="fw-bold mb-0">{{ outliers.values()|sum(attribute='outlier_count') }}</h4><small class="stat-label">Outlier Count</small></div>
+                            <div class="stat-box"><h4 class="fw-bold mb-0"><span class="badge bg-danger" style="font-size:1rem;padding:0.4rem 0.75rem;">{{ outliers.values()|sum(attribute='outlier_count') }}</span></h4><small class="stat-label">Outliers</small></div>
                         </div>
-                        <div class="col-md-3 col-6">
+                        <div class="col-md-2 col-6">
                             <div class="stat-box">
                                 {% set qs_score = qs.get('score', 0) %}
                                 <h4 class="fw-bold mb-0">{{ qs_score }}%</h4><small class="stat-label">Data Quality Score</small>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6">
+                        <div class="col-md-2 col-6">
                             <div class="stat-box">
                                 {% set vstatus = 'Passed' if qs.get('score', 0) >= 70 else 'Review Needed' %}
                                 <h4 class="fw-bold mb-0">{{ vstatus }}</h4><small class="stat-label">Validation Status</small>
@@ -149,13 +149,17 @@
                     </div>
                     {% if qs %}
                     <div class="row g-3 mt-2">
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between small mb-1"><span>Completeness</span><span>{{ qs.get('completeness', 0) }}%</span></div>
-                            <div class="progress mb-2" style="height:6px;"><div class="progress-bar" style="width:{{ qs.get('completeness', 0) }}%"></div></div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h4 class="fw-bold mb-0">{{ "%.2f"|format(qs.get('completeness', 0)) }}%</h4>
+                                <small class="stat-label">Completeness</small>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between small mb-1"><span>Outlier Score</span><span>{{ qs.get('outlier_score', 0) }}%</span></div>
-                            <div class="progress mb-2" style="height:6px;"><div class="progress-bar" style="width:{{ qs.get('outlier_score', 0) }}%"></div></div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h4 class="fw-bold mb-0">{{ qs.get('outlier_score', 0) }}%</h4>
+                                <small class="stat-label">Outlier Score</small>
+                            </div>
                         </div>
                     </div>
                     {% endif %}

@@ -18,28 +18,14 @@
             <h3 class="fw-bold mb-1"><i class="fas fa-file-alt text-primary me-2"></i>Reports Dashboard</h3>
             <p class="text-muted mb-0">{{ dataset.dataset_name or dataset.file_name }} <code class="small ms-1">{{ dataset.dataset_id }}</code> &mdash; {{ r.get('generated_at', '') }}</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='pdf') }}" class="btn btn-danger">
-                <i class="fas fa-file-pdf me-1"></i>PDF
-            </a>
-            <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-primary">
-                <i class="fas fa-file-csv me-1"></i>CSV
-            </a>
-            <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='xlsx') }}" class="btn btn-primary">
-                <i class="fas fa-file-excel me-1"></i>Excel
-            </a>
-            <a href="{{ url_for('reports.download_trained_model', dataset_id=dataset.id) }}" class="btn btn-success">
-                <i class="fas fa-download me-1"></i>Download Trained Model
-            </a>
-        </div>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
-            <div class="stat-box"><h3>{{ dataset.dataset_name or dataset.file_name }}</h3><small>Dataset Name</small></div>
+            <div class="stat-box"><h3>{{ dataset.dataset_name or dataset.file_name }}</h3><small>Experiment Name</small></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-box"><h3><code>{{ dataset.dataset_id }}</code></h3><small>Dataset ID</small></div>
+            <div class="stat-box"><h3><code>{{ dataset.dataset_id }}</code></h3><small>Experiment ID</small></div>
         </div>
         <div class="col-md-3 col-6">
             <div class="stat-box"><h3>{{ r.get('dataset_rows', 0) }}</h3><small>Total Rows</small></div>
@@ -49,6 +35,44 @@
         </div>
         <div class="col-md-3 col-6">
             <div class="stat-box"><h3>{{ r.get('upload_date', 'N/A') }}</h3><small>Uploaded Date</small></div>
+        </div>
+    </div>
+
+    <div class="card section-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 fw-bold section-title"><i class="fas fa-download me-2"></i>Download Center</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='pdf') }}" class="btn btn-outline-danger w-100 py-3">
+                        <i class="fas fa-file-pdf fa-2x mb-2 d-block"></i>
+                        <span class="fw-bold">PDF Report</span><br>
+                        <small class="text-muted">Complete formatted report</small>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-outline-primary w-100 py-3">
+                        <i class="fas fa-file-csv fa-2x mb-2 d-block"></i>
+                        <span class="fw-bold">CSV Report</span><br>
+                        <small class="text-muted">Raw data export</small>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='xlsx') }}" class="btn btn-outline-primary w-100 py-3">
+                        <i class="fas fa-file-excel fa-2x mb-2 d-block"></i>
+                        <span class="fw-bold">Excel Report</span><br>
+                        <small class="text-muted">Multi-sheet workbook</small>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('reports.download_trained_model', dataset_id=dataset.id) }}" class="btn btn-success w-100 py-3">
+                        <i class="fas fa-download fa-2x mb-2 d-block"></i>
+                        <span class="fw-bold">Download Trained Model</span><br>
+                        <small class="text-muted">PKL file</small>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -229,37 +253,6 @@
                     <p class="text-muted text-center py-3 mb-0">No insights available.</p>
                 </div>
                 {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <div class="card section-card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0 fw-bold section-title"><i class="fas fa-download me-2"></i>Download Center</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='pdf') }}" class="btn btn-outline-danger w-100 py-3">
-                        <i class="fas fa-file-pdf fa-2x mb-2 d-block"></i>
-                        <span class="fw-bold">PDF Report</span><br>
-                        <small class="text-muted">Complete formatted report</small>
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-outline-primary w-100 py-3">
-                        <i class="fas fa-file-csv fa-2x mb-2 d-block"></i>
-                        <span class="fw-bold">CSV Report</span><br>
-                        <small class="text-muted">Raw data export</small>
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='xlsx') }}" class="btn btn-outline-primary w-100 py-3">
-                        <i class="fas fa-file-excel fa-2x mb-2 d-block"></i>
-                        <span class="fw-bold">Excel Report</span><br>
-                        <small class="text-muted">Multi-sheet workbook</small>
-                    </a>
-                </div>
             </div>
         </div>
     </div>

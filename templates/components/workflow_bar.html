@@ -33,17 +33,13 @@
             </a>
             {% endif %}
         </div>
+        {% if step_urls.next %}
         <div>
-            {% if step_urls.next %}
             <a href="{{ step_urls.next }}" class="btn btn-primary">
                 Next Step <i class="fas fa-arrow-right ms-1"></i>
             </a>
-            {% else %}
-            <button class="btn btn-secondary" disabled>
-                Next Step <i class="fas fa-arrow-right ms-1"></i>
-            </button>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
     {% endif %}
 </div>

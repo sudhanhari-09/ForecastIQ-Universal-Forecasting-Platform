@@ -126,32 +126,6 @@ def dashboard(dataset_id):
                            workflow_state=workflow_state, step_urls=step_urls)
 
 
-@preprocessing_bp.route('/preprocessing-summary/<int:dataset_id>')
-@login_required
-def summary(dataset_id):
-    dataset = get_dataset(dataset_id, session['user_id'])
-    if not dataset:
-        flash('Dataset not found.', 'danger')
-        return redirect(url_for('dataset.list_datasets'))
-    resp = require_step_completion(dataset_id, 4)
-    if resp:
-        return resp
-
-    report = get_preprocessing_report(dataset_id)
-    if not report:
-        flash('No preprocessing results found.', 'warning')
-        return redirect(url_for('preprocessing.mode_selection', dataset_id=dataset_id))
-
-    steps = json.loads(report.steps_applied) if report.steps_applied else {}
-    workflow_state = get_workflow_state(dataset_id)
-    step_urls = get_step_urls(dataset_id, 4, workflow_state)
-
-    return render_template('preprocessing_summary.html', dataset=dataset,
-                           report=report, steps=steps, dataset_id=dataset_id,
-                           current_step=workflow_state['current'],
-                           workflow_state=workflow_state, step_urls=step_urls)
-
-
 @preprocessing_bp.route('/download-processed/<int:dataset_id>')
 @login_required
 def download_processed(dataset_id):
@@ -175,7 +149,7 @@ def download_processed(dataset_id):
 
     if not os.path.exists(file_path):
         flash('Processed file not found.', 'warning')
-        return redirect(url_for('preprocessing.summary', dataset_id=dataset_id))
+        return redirect(url_for('preprocessing.dashboard', dataset_id=dataset_id))
 
     download_name = f'processed_{dataset.file_name.rsplit(".", 1)[0]}.{fmt}'
     return send_file(file_path, as_attachment=True, download_name=download_name)

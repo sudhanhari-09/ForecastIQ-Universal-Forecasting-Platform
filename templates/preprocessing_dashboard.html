@@ -14,11 +14,6 @@
                 <span class="badge-tag badge-tag-primary ms-2">{{ report.created_at.strftime('%Y-%m-%d %H:%M') if report.created_at else '' }}</span>
             </p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('preprocessing.summary', dataset_id=dataset.id) }}" class="btn btn-outline-primary">
-                <i class="fas fa-file-alt me-1"></i>Summary
-            </a>
-        </div>
     </div>
 
     <div class="row g-3 mb-4">
@@ -245,9 +240,6 @@
     {% endif %}
 
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ url_for('preprocessing.summary', dataset_id=dataset.id) }}" class="btn btn-primary">
-            <i class="fas fa-file-alt me-1"></i>View Summary &amp; Download
-        </a>
         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rerunModal">
             <i class="fas fa-redo me-1"></i>Run Again
         </button>
