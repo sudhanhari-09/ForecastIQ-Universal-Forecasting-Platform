@@ -2,26 +2,8 @@
 {% block title %}Forecast Results{% endblock %}
 {% block extra_css %}
 <style>
-.forecast-value { font-weight: 600; color: var(--text-primary); }
-.status-excellent { color: #059669; font-weight: 600; }
-.status-good { color: #2563EB; font-weight: 600; }
-.status-average { color: #D97706; font-weight: 600; }
-.status-poor { color: #DC2626; font-weight: 600; }
-.trend-up { color: #059669; }
-.trend-down { color: #DC2626; }
-.trend-stable { color: #6B7280; }
-.section-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 1.5rem; }
-.section-card .card-header { background: var(--white); border-bottom: 1px solid var(--border-light); padding: 1rem 1.25rem; }
-.section-card .card-body { padding: 1.25rem; }
-.stat-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 1.25rem; border: 1px solid var(--border); height: 100%; text-align: center; }
-.stat-card-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
-.stat-card-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.25rem; }
-.insight-item { padding: 0.75rem 1rem; border-left: 3px solid var(--primary); background: var(--bg-body); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin-bottom: 0.75rem; }
-.insight-item strong { color: var(--text-primary); }
-.download-btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 .table-responsive { max-height: 500px; overflow-y: auto; }
 .table thead th { position: sticky; top: 0; background: var(--white); z-index: 1; }
-.bucket-bar { height: 20px; border-radius: 4px; background: var(--primary); min-width: 2px; }
 </style>
 {% endblock %}
 {% block content %}

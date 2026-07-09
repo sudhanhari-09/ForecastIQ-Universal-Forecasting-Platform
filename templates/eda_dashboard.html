@@ -2,17 +2,6 @@
 {% block title %}EDA Dashboard{% endblock %}
 {% block extra_css %}
 <style>
-.stats-table { font-size: 0.85rem; }
-.stats-table td, .stats-table th { white-space: nowrap; }
-.quality-ring { width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto; border: 4px solid var(--border); }
-.chart-image { width: 100%; height: auto; object-fit: contain; display: block; }
-.eda-tabs { border-bottom: 1px solid var(--border-light); margin-bottom: 1.5rem; gap: 0; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.eda-tabs::-webkit-scrollbar { display: none; }
-.eda-tabs .nav-link { border: none; border-bottom: 2px solid transparent; padding: 0.7rem 1rem; font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap; transition: all 0.2s ease; border-radius: 0; margin: 0; background: none; }
-.eda-tabs .nav-link:hover { border-bottom-color: var(--border); color: var(--text-primary); }
-.eda-tabs .nav-link.active { border-bottom-color: var(--primary); color: var(--primary); background: none; }
-.eda-tab-content > .tab-pane { animation: edaFadeIn 0.3s ease; }
-@keyframes edaFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 767.98px) {
     .eda-tabs .nav-link { padding: 0.6rem 0.75rem; font-size: 0.75rem; }
 }
