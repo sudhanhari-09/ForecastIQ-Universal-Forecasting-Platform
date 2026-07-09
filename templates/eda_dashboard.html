@@ -132,7 +132,7 @@
                             <div class="stat-box"><h4 class="fw-bold mb-0">{{ qs.get('duplicate_count', 0) }}</h4><small class="stat-label">Duplicate Rows</small></div>
                         </div>
                         <div class="col-md-2 col-6">
-                            <div class="stat-box"><h4 class="fw-bold mb-0"><span class="badge bg-danger" style="font-size:1rem;padding:0.4rem 0.75rem;">{{ outliers.values()|sum(attribute='outlier_count') }}</span></h4><small class="stat-label">Outliers</small></div>
+                            <div class="stat-box"><h4 class="fw-bold mb-0 text-danger"><i class="fas fa-exclamation-triangle me-1"></i>{{ outliers.values()|sum(attribute='outlier_count') }}</h4><small class="stat-label">Outliers</small></div>
                         </div>
                         <div class="col-md-2 col-6">
                             <div class="stat-box">
@@ -157,7 +157,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="stat-box">
-                                <h4 class="fw-bold mb-0">{{ qs.get('outlier_score', 0) }}%</h4>
+                                <h4 class="fw-bold mb-0 text-danger"><i class="fas fa-exclamation-triangle me-1"></i>{{ qs.get('outlier_score', 0) }}%</h4>
                                 <small class="stat-label">Outlier Score</small>
                             </div>
                         </div>

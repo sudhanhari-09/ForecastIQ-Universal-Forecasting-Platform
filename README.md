@@ -439,3 +439,12 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 - **ForecastIQ Development Team** — Core architecture and implementation
 
 Contributions are welcome! Please open an issue or submit a pull request.
+
+---
+
+## 👨‍💻 Developed By
+
+- Harihara Sudhan S
+- Janani Boopathiraj
+
+**ForecastIQ – Universal Forecasting Platform**
