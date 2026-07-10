@@ -277,6 +277,19 @@
 {% endblock %}
 {% block extra_js %}
 <script>
+var MODEBAR_CONFIG = {
+    displaylogo: false,
+    responsive: true,
+    modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines"]
+};
+function ensureLayout(layout) {
+    if (layout) {
+        if (!layout.margin) layout.margin = {};
+        if (layout.margin.t === undefined || layout.margin.t < 55) layout.margin.t = 55;
+        if (layout.margin.r === undefined || layout.margin.r < 10) layout.margin.r = 10;
+    }
+    return layout;
+}
 var chartJson = {{ chart_json|safe }};
 function renderCharts() {
     var mapping = {'rmse': 'rmse', 'mae': 'mae', 'mape': 'mape', 'r2': 'r2', 'training_time': 'training_time'};
@@ -284,7 +297,7 @@ function renderCharts() {
         var ch = mapping[key];
         var el = document.getElementById('chart-' + key);
         if (el && chartJson[ch]) {
-            Plotly.newPlot(el, chartJson[ch].data, chartJson[ch].layout, {responsive: true});
+            Plotly.newPlot(el, chartJson[ch].data, ensureLayout(chartJson[ch].layout), MODEBAR_CONFIG);
         }
     }
 }
@@ -333,14 +346,14 @@ function loadModelData(modelName) {
             var layout = {
                 title: modelName + ' — Actual vs Predicted',
                 height: 350,
-                margin: {t: 40, b: 60, l: 60, r: 20},
+                margin: {t: 55, b: 60, l: 60, r: 20},
                 template: 'plotly_white',
                 xaxis: {title: 'Time'},
                 yaxis: {title: data.target_col || 'Value'},
                 showlegend: true,
                 legend: {orientation: 'h', y: -0.2}
             };
-            Plotly.newPlot(container, traces, layout, {responsive: true});
+            Plotly.newPlot(container, traces, layout, MODEBAR_CONFIG);
         })
         .catch(function(err) {
             container.innerHTML = '<p class="text-danger text-center py-5">Failed to load model data.</p>';

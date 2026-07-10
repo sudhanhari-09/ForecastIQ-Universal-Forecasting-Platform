@@ -185,10 +185,10 @@
                 <div class="card-body">
                     <div class="row g-3">
                         {% for b in bar_g %}
-                        <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-simple text-primary me-1"></i>{{ b.column }}</h6></div><div class="card-body">{% if b.image %}<img src="{{ b.image }}" alt="Bar Chart: {{ b.column }}" class="chart-image">{% endif %}</div></div></div>
+                        <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-simple text-primary me-1"></i>{{ b.column }}</h6></div><div class="card-body">{% if b.plotly %}<div id="chart-bar-{{ loop.index0 }}" class="chart-container"></div>{% endif %}</div></div></div>
                         {% endfor %}
                         {% for p in pie_g %}
-                        <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-pie text-primary me-1"></i>{{ p.column }}</h6></div><div class="card-body">{% if p.image %}<img src="{{ p.image }}" alt="Pie Chart: {{ p.column }}" class="chart-image">{% endif %}</div></div></div>
+                        <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-pie text-primary me-1"></i>{{ p.column }}</h6></div><div class="card-body">{% if p.plotly %}<div id="chart-pie-{{ loop.index0 }}" class="chart-container"></div>{% endif %}</div></div></div>
                         {% endfor %}
                     </div>
                 </div>
@@ -268,17 +268,17 @@
                         </div>
                     </div>
                     {% set missing_chart = charts.get('missing', {}) %}
-                    {% if missing_chart and missing_chart.get('image') %}
+                    {% if missing_chart and missing_chart.get('data') %}
                     <div class="card section-card mb-3">
                         <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-bar me-1 text-danger"></i>Missing Bar Chart</h6></div>
-                        <div class="card-body"><img src="{{ missing_chart.image }}" alt="Missing Bar Chart" class="chart-image"></div>
+                        <div class="card-body"><div id="chart-missing" class="chart-container"></div></div>
                     </div>
                     {% endif %}
                     {% set missing_heat = charts.get('missing_heatmap', {}) %}
-                    {% if missing_heat and missing_heat.get('image') %}
+                    {% if missing_heat and missing_heat.get('data') %}
                     <div class="card section-card">
                         <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-th me-1 text-danger"></i>Missing Heatmap</h6></div>
-                        <div class="card-body"><img src="{{ missing_heat.image }}" alt="Missing Heatmap" class="chart-image"></div>
+                        <div class="card-body"><div id="chart-missing-heat" class="chart-container"></div></div>
                     </div>
                     {% endif %}
                     {% else %}
@@ -307,7 +307,7 @@
                     <h6 class="fw-bold mb-3"><i class="fas fa-chart-box text-primary me-2"></i>Boxplots by Column</h6>
                     <div class="row mb-4">
                         {% for b in boxplots %}
-                        <div class="col-md-6 mb-3">{% if b.image %}<img src="{{ b.image }}" alt="Boxplot: {{ b.column }}" class="chart-image">{% endif %}</div>
+                        <div class="col-md-6 mb-3">{% if b.plotly %}<div id="chart-boxplot-outlier-{{ loop.index0 }}" class="chart-container"></div>{% endif %}</div>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -348,10 +348,10 @@
                     <div class="row g-4 mb-4">
                         <div class="col-lg-7">
                             {% set corr_chart = charts.get('correlation', {}) %}
-                            {% if corr_chart and corr_chart.get('image') %}
+                            {% if corr_chart and corr_chart.get('data') %}
                             <div class="card section-card h-100">
                                 <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-th me-1 text-primary"></i>Correlation Matrix Heatmap</h6></div>
-                                <div class="card-body"><img src="{{ corr_chart.image }}" alt="Correlation Matrix Heatmap" class="chart-image"></div>
+                                <div class="card-body"><div id="chart-corr" class="chart-container"></div></div>
                             </div>
                             {% endif %}
                         </div>
@@ -419,7 +419,7 @@
                     <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar text-primary me-2"></i>Histograms</h6>
                     <div class="row mb-4">
                         {% for h in histograms %}
-                        <div class="col-md-6 mb-3">{% if h.image %}<img src="{{ h.image }}" alt="Histogram: {{ h.column }}" class="chart-image">{% endif %}</div>
+                        <div class="col-md-6 mb-3">{% if h.plotly %}<div id="chart-hist-{{ loop.index0 }}" class="chart-container"></div>{% endif %}</div>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -427,7 +427,7 @@
                     <h6 class="fw-bold mb-3"><i class="fas fa-wave-square text-primary me-2"></i>Density Plots</h6>
                     <div class="row mb-4">
                         {% for d in density_charts %}
-                        <div class="col-md-6 mb-3">{% if d.image %}<img src="{{ d.image }}" alt="Density: {{ d.column }}" class="chart-image">{% endif %}</div>
+                        <div class="col-md-6 mb-3">{% if d.plotly %}<div id="chart-density-{{ loop.index0 }}" class="chart-container"></div>{% endif %}</div>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -435,7 +435,7 @@
                     <h6 class="fw-bold mb-3"><i class="fas fa-chart-box text-primary me-2"></i>Box Plots</h6>
                     <div class="row">
                         {% for b in boxplot_charts %}
-                        <div class="col-md-6 mb-3">{% if b.image %}<img src="{{ b.image }}" alt="Box Plot: {{ b.column }}" class="chart-image">{% endif %}</div>
+                        <div class="col-md-6 mb-3">{% if b.plotly %}<div id="chart-boxplot-{{ loop.index0 }}" class="chart-container"></div>{% endif %}</div>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -461,17 +461,17 @@
                         <div class="col-md-3 col-6"><div class="stat-box"><h6 class="fw-bold mb-0">{{ ts.get('frequency', 'N/A') }}</h6><small class="stat-label">Frequency</small></div></div>
                     </div>
                     {% set trend = charts.get('trend', {}) %}
-                    {% if trend and trend.get('image') %}
+                    {% if trend and trend.get('data') %}
                     <div class="card section-card mb-3">
                         <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-line me-1 text-primary"></i>Trend Chart</h6></div>
-                        <div class="card-body"><img src="{{ trend.image }}" alt="Trend Chart" class="chart-image"></div>
+                        <div class="card-body"><div id="chart-trend" class="chart-container"></div></div>
                     </div>
                     {% endif %}
                     {% set roll_avg = charts.get('rolling_avg', {}) %}
-                    {% if roll_avg and roll_avg.get('image') %}
+                    {% if roll_avg and roll_avg.get('data') %}
                     <div class="card section-card">
                         <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-wave-square me-1 text-danger"></i>Rolling Average</h6></div>
-                        <div class="card-body"><img src="{{ roll_avg.image }}" alt="Rolling Average Chart" class="chart-image"></div>
+                        <div class="card-body"><div id="chart-rolling-avg" class="chart-container"></div></div>
                     </div>
                     {% endif %}
                     {% if ts.get('frequency') %}
@@ -584,4 +584,173 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var chartsData = JSON.parse('{{ charts_json|safe }}');
+
+    function decodeArrays(obj) {
+        if (obj === null || obj === undefined) return obj;
+        if (Array.isArray(obj)) return obj.map(decodeArrays);
+        if (typeof obj === 'object' && obj.dtype && obj.bdata) {
+            var dtype = obj.dtype, shape = obj.shape;
+            var binStr = atob(obj.bdata);
+            var buf = new ArrayBuffer(binStr.length);
+            var bytes = new Uint8Array(buf);
+            for (var i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+            var typed;
+            if (dtype === 'f8') typed = new Float64Array(buf);
+            else if (dtype === 'f4') typed = new Float32Array(buf);
+            else if (dtype === 'i1' || dtype === 'b') typed = new Int8Array(buf);
+            else if (dtype === 'i2') typed = new Int16Array(buf);
+            else if (dtype === 'i4') typed = new Int32Array(buf);
+            else if (dtype === 'u1') typed = new Uint8Array(buf);
+            else if (dtype === 'u2') typed = new Uint16Array(buf);
+            else if (dtype === 'u4') typed = new Uint32Array(buf);
+            else return obj;
+            var arr = Array.from(typed);
+            if (shape) {
+                var dims = shape.split(',').map(Number);
+                if (dims.length === 2) {
+                    var result = [];
+                    for (var r = 0; r < dims[0]; r++) {
+                        result.push(arr.slice(r * dims[1], (r + 1) * dims[1]));
+                    }
+                    return result;
+                }
+            }
+            return arr;
+        }
+        if (typeof obj === 'object') {
+            var result = {};
+            for (var k in obj) {
+                if (obj.hasOwnProperty(k)) result[k] = decodeArrays(obj[k]);
+            }
+            return result;
+        }
+        return obj;
+    }
+
+    var MODEBAR_CONFIG = {
+        displaylogo: false,
+        responsive: true,
+        modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines"]
+    };
+
+    function plotChart(id, data, layout, config) {
+        var el = document.getElementById(id);
+        if (el) {
+            data = decodeArrays(data);
+            layout = decodeArrays(layout);
+            if (layout) {
+                if (!layout.margin) layout.margin = {};
+                if (layout.margin.t === undefined || layout.margin.t < 55) layout.margin.t = 55;
+                if (layout.margin.r === undefined || layout.margin.r < 10) layout.margin.r = 10;
+            }
+            var cfg = Object.assign({}, MODEBAR_CONFIG, config || {});
+            try {
+                Plotly.newPlot(el, data, layout || {}, cfg);
+            } catch(e) {
+                console.warn('Plotly error for', id, e);
+            }
+        }
+    }
+
+    if (chartsData.correlation) {
+        plotChart('chart-corr', chartsData.correlation.data, chartsData.correlation.layout);
+    }
+    if (chartsData.missing) {
+        plotChart('chart-missing', chartsData.missing.data, chartsData.missing.layout);
+    }
+    if (chartsData.missing_heatmap) {
+        var mhTrace = decodeArrays(chartsData.missing_heatmap.data);
+        var mhLayout = decodeArrays(chartsData.missing_heatmap.layout);
+        if (mhTrace && mhTrace[0]) {
+            var z = mhTrace[0].z;
+            console.log('MH z:', Array.isArray(z) ? z.length + 'x' + (z[0] ? z[0].length : 0) + ' array' : typeof z);
+            var mhX = mhTrace[0].x || [];
+            var mhY = mhTrace[0].y || [];
+            console.log('MH x len:', mhX.length, 'y len:', mhY.length);
+            if (Array.isArray(z) && z.length > 0 && z[0] && Array.isArray(z[0])) {
+                if (z.length !== mhY.length) console.warn('MH: z rows', z.length, '!= y len', mhY.length);
+                if (z[0].length !== mhX.length) console.warn('MH: z cols', z[0].length, '!= x len', mhX.length);
+                var hasBad = false, badCount = 0;
+                for (var r = 0; r < z.length; r++) {
+                    for (var c = 0; c < z[r].length; c++) {
+                        if (z[r][c] === undefined || z[r][c] === null || (typeof z[r][c] === 'number' && isNaN(z[r][c]))) {
+                            z[r][c] = 0; hasBad = true; badCount++;
+                        }
+                    }
+                }
+                if (hasBad) console.warn('MH: Fixed', badCount, 'bad z values');
+                console.log('MH z sample row0:', z[0].slice(0, 15));
+            } else {
+                console.warn('MH: z is invalid, creating fallback');
+                mhTrace[0].z = [Array(mhTrace[0].x ? mhTrace[0].x.length : 1).fill(0)];
+            }
+            if (mhLayout) {
+                if (!mhLayout.margin) mhLayout.margin = {};
+                if (mhLayout.margin.t === undefined || mhLayout.margin.t < 55) mhLayout.margin.t = 55;
+                if (mhLayout.margin.r === undefined || mhLayout.margin.r < 10) mhLayout.margin.r = 10;
+            }
+            var mhEl = document.getElementById('chart-missing-heat');
+            if (mhEl) {
+                try {
+                    Plotly.newPlot(mhEl, mhTrace, mhLayout || {}, MODEBAR_CONFIG);
+                } catch(e) { console.warn('MH Plotly error:', e); }
+            }
+        }
+    }
+    if (chartsData.trend) {
+        plotChart('chart-trend', chartsData.trend.data, chartsData.trend.layout);
+    }
+    if (chartsData.rolling_avg) {
+        plotChart('chart-rolling-avg', chartsData.rolling_avg.data, chartsData.rolling_avg.layout);
+    }
+
+    (chartsData.histograms || []).forEach(function(ch, i) {
+        if (ch && ch.plotly) {
+            plotChart('chart-hist-' + i, ch.plotly.data, ch.plotly.layout);
+        }
+    });
+    (chartsData.density || []).forEach(function(ch, i) {
+        if (ch && ch.plotly) {
+            plotChart('chart-density-' + i, ch.plotly.data, ch.plotly.layout);
+        }
+    });
+    (chartsData.boxplots || []).forEach(function(ch, i) {
+        if (ch && ch.plotly) {
+            plotChart('chart-boxplot-' + i, ch.plotly.data, ch.plotly.layout);
+            plotChart('chart-boxplot-outlier-' + i, ch.plotly.data, ch.plotly.layout);
+        }
+    });
+    (chartsData.bar || []).forEach(function(ch, i) {
+        if (ch && ch.plotly) {
+            plotChart('chart-bar-' + i, ch.plotly.data, ch.plotly.layout);
+        }
+    });
+    (chartsData.pie || []).forEach(function(ch, i) {
+        if (ch && ch.plotly) {
+            plotChart('chart-pie-' + i, ch.plotly.data, ch.plotly.layout);
+        }
+    });
+});
+
+// Resize Plotly charts when hidden tabs become visible
+document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tab) {
+    tab.addEventListener('shown.bs.tab', function(e) {
+        var targetId = e.target.getAttribute('data-bs-target') || e.target.getAttribute('href');
+        if (targetId) {
+            var pane = document.querySelector(targetId);
+            if (pane) {
+                pane.querySelectorAll('.chart-container').forEach(function(el) {
+                    Plotly.Plots.resize(el);
+                });
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

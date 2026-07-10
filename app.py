@@ -22,9 +22,8 @@ def create_app():
         format='%(asctime)s [%(levelname)s] %(message)s',
         datefmt='%H:%M:%S'
     )
-    for logger_name in ('matplotlib', 'PIL', 'h5py', 'urllib3'):
+    for logger_name in ('PIL', 'h5py', 'urllib3'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)
-    logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
     logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
     os.makedirs(app.instance_path, exist_ok=True)

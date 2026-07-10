@@ -1,7 +1,8 @@
 import os
+import json as _json
 from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, session,
-                   current_app, send_file, send_from_directory)
+                   current_app, send_file)
 from routes.auth import login_required
 from services.dataset_service import get_dataset
 from services.eda_service import (run_automatic_eda, run_manual_eda,
@@ -23,28 +24,7 @@ def _get_results(dataset_id, user_id):
     if not results:
         flash('No EDA results found. Please run EDA first.', 'warning')
         return None, None
-    results['output_dir'] = _get_output_dir(dataset_id)
     return dataset, results
-
-
-def _convert_image_paths_to_urls(charts, dataset_id):
-    """Convert stored absolute image paths to web URLs for template rendering."""
-    if not charts:
-        return charts
-    for value in charts.values():
-        if isinstance(value, dict) and value.get('image'):
-            value['image'] = url_for('eda.eda_chart_image', dataset_id=dataset_id, filename=os.path.basename(value['image']))
-        elif isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict) and item.get('image'):
-                    item['image'] = url_for('eda.eda_chart_image', dataset_id=dataset_id, filename=os.path.basename(item['image']))
-    return charts
-
-
-@eda_bp.route('/eda-chart-image/<int:dataset_id>/<path:filename>')
-@login_required
-def eda_chart_image(dataset_id, filename):
-    return send_from_directory(os.path.join(_get_output_dir(dataset_id), 'images'), filename)
 
 
 @eda_bp.route('/eda-mode/<int:dataset_id>')
@@ -138,7 +118,7 @@ def eda_dashboard(dataset_id):
     if resp:
         return resp
     charts = results.get('charts', {})
-    charts = _convert_image_paths_to_urls(charts, dataset_id)
+    charts_json = _json.dumps(charts)
     eda_mode = 'automatic'
     report = None
     if results.get('report_id'):
@@ -175,7 +155,7 @@ def eda_dashboard(dataset_id):
     step_urls = wf_get_step_urls(dataset_id, 3, workflow_state)
    
     return render_template('eda_dashboard.html', dataset=dataset, results=results,
-                           charts=charts, eda_mode=eda_mode, report=report,
+                           charts=charts, charts_json=charts_json, eda_mode=eda_mode, report=report,
                            quality_score=quality_score, smart_insights=smart_insights,
                            dataset_id=dataset_id, current_step=workflow_state['current'],
                            workflow_state=workflow_state, step_urls=step_urls)
@@ -203,10 +183,7 @@ def generate_report(dataset_id):
     if resp:
         return resp
 
-    output_dir = results.get('output_dir')
-    if not output_dir:
-        flash('Report directory not found.', 'danger')
-        return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
+    output_dir = _get_output_dir(dataset_id)
 
     report_path = generate_html_report(dataset, results, output_dir)
     eda_report = get_eda_report(results.get('report_id'))
@@ -228,10 +205,7 @@ def download_report(dataset_id):
     resp = require_step_completion(dataset_id, 3)
     if resp:
         return resp
-    output_dir = results.get('output_dir')
-    if not output_dir:
-        flash('Report not found.', 'danger')
-        return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
+    output_dir = _get_output_dir(dataset_id)
     report_path = os.path.join(output_dir, 'eda_report.html')
     if not os.path.exists(report_path):
         flash('Report file not found. Please generate it first.', 'warning')

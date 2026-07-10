@@ -4,6 +4,7 @@
 <style>
 .table-responsive { max-height: 500px; overflow-y: auto; }
 .table thead th { position: sticky; top: 0; background: var(--white); z-index: 1; }
+.section-card { margin-bottom: 28px; }
 </style>
 {% endblock %}
 {% block content %}
@@ -114,7 +115,19 @@
     </div>
   </div>
 
-  <!-- SECTION 3: Actual vs Predicted Table -->
+  <!-- SECTION 3: Actual vs Predicted Chart -->
+  {% if r.get('test_values') and r.get('models', {}).get(r.get('best_model'), {}).get('test_predictions') %}
+  <div class="section-card" id="section-actual-predicted-chart">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-chart-line text-primary me-2"></i>Actual vs Predicted Chart</h5>
+    </div>
+    <div class="card-body">
+      <div id="chart-actual-predicted" class="chart-container" style="height:400px;"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 4: Actual vs Predicted Table -->
   {% set actual_preds = r.get('actual_predictions', []) %}
   {% if actual_preds %}
   <div class="section-card" id="section-actual-predicted">
@@ -150,8 +163,20 @@
   </div>
   {% endif %}
 
-  <!-- SECTION 4: Future Forecast Table -->
+  <!-- SECTION 4: Future Forecast Visualization -->
   {% set future_preds = r.get('future_predictions', []) %}
+  {% if future_preds %}
+  <div class="section-card" id="section-future-chart">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-chart-area text-primary me-2"></i>Forecast Visualization <span class="text-muted fw-normal small ms-2">({{ future_preds|length }} periods)</span></h5>
+    </div>
+    <div class="card-body">
+      <div id="chart-forecast" class="chart-container" style="height:400px;"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 5: Future Forecast Table -->
   {% if future_preds %}
   <div class="section-card" id="section-future">
     <div class="card-header">
@@ -190,7 +215,7 @@
   </div>
   {% endif %}
 
-  <!-- SECTION 5: Forecast Statistics -->
+  <!-- SECTION 6: Forecast Statistics -->
   {% set fstats = r.get('forecast_statistics', {}) %}
   {% if fstats %}
   <div class="section-card" id="section-statistics">
@@ -215,7 +240,7 @@
   </div>
   {% endif %}
 
-  <!-- SECTION 6: Error Analysis (Distribution) -->
+  <!-- SECTION 7: Error Analysis (Distribution) -->
   {% set error_dist = r.get('error_distribution', []) %}
   {% if error_dist %}
   <div class="section-card" id="section-error">
@@ -249,7 +274,7 @@
   </div>
   {% endif %}
 
-  <!-- SECTION 7: Top Predictions -->
+  <!-- SECTION 8: Top Predictions -->
   {% set top_preds = r.get('top_predictions', []) %}
   {% if top_preds %}
   <div class="section-card" id="section-top">
@@ -276,7 +301,7 @@
   </div>
   {% endif %}
 
-  <!-- SECTION 8: Lowest Predictions -->
+  <!-- SECTION 9: Lowest Predictions -->
   {% set low_preds = r.get('lowest_predictions', []) %}
   {% if low_preds %}
   <div class="section-card" id="section-lowest">
@@ -303,7 +328,7 @@
   </div>
   {% endif %}
 
-  <!-- SECTION 9: Intelligent Insights -->
+  <!-- SECTION 10: Intelligent Insights -->
   {% if ins %}
   <div class="section-card" id="section-insights">
     <div class="card-header">
@@ -367,6 +392,75 @@
 document.addEventListener('DOMContentLoaded', function() {
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
+
+  {% if charts_json %}
+  var chartData = {{ charts_json|safe }};
+  function decodeArrays(obj) {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map(decodeArrays);
+    if (typeof obj === 'object' && obj.dtype && obj.bdata) {
+      var dtype = obj.dtype, shape = obj.shape;
+      var binStr = atob(obj.bdata);
+      var buf = new ArrayBuffer(binStr.length);
+      var bytes = new Uint8Array(buf);
+      for (var i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+      var typed;
+      if (dtype === 'f8') typed = new Float64Array(buf);
+      else if (dtype === 'f4') typed = new Float32Array(buf);
+      else if (dtype === 'i1' || dtype === 'b') typed = new Int8Array(buf);
+      else if (dtype === 'i2') typed = new Int16Array(buf);
+      else if (dtype === 'i4') typed = new Int32Array(buf);
+      else if (dtype === 'u1') typed = new Uint8Array(buf);
+      else if (dtype === 'u2') typed = new Uint16Array(buf);
+      else if (dtype === 'u4') typed = new Uint32Array(buf);
+      else return obj;
+      var arr = Array.from(typed);
+      if (shape) {
+        var dims = shape.split(',').map(Number);
+        if (dims.length === 2) {
+          var result = [];
+          for (var r = 0; r < dims[0]; r++) result.push(arr.slice(r * dims[1], (r + 1) * dims[1]));
+          return result;
+        }
+      }
+      return arr;
+    }
+    if (typeof obj === 'object') {
+      var result = {};
+      for (var k in obj) if (obj.hasOwnProperty(k)) result[k] = decodeArrays(obj[k]);
+      return result;
+    }
+    return obj;
+  }
+  var MODEBAR_CONFIG = {
+    displaylogo: false,
+    responsive: true,
+    modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines"]
+  };
+  function plotChart(id, data, layout) {
+    var el = document.getElementById(id);
+    if (el) {
+      data = decodeArrays(data);
+      layout = decodeArrays(layout);
+      if (layout) {
+        if (!layout.margin) layout.margin = {};
+        if (layout.margin.t === undefined || layout.margin.t < 55) layout.margin.t = 55;
+        if (layout.margin.r === undefined || layout.margin.r < 10) layout.margin.r = 10;
+      }
+      try {
+        Plotly.newPlot(el, data, layout || {}, MODEBAR_CONFIG);
+      } catch(e) {
+        console.warn('Plotly error for', id, e);
+      }
+    }
+  }
+  if (chartData.actual_vs_predicted) {
+    plotChart('chart-actual-predicted', chartData.actual_vs_predicted.data, chartData.actual_vs_predicted.layout);
+  }
+  if (chartData.forecast) {
+    plotChart('chart-forecast', chartData.forecast.data, chartData.forecast.layout);
+  }
+  {% endif %}
 });
 </script>
 {% endblock %}

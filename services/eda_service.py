@@ -25,8 +25,7 @@ def _log_error(chart_name, column, error):
 def _get_output_dir(dataset_id):
     base = current_app.config['EDA_REPORTS_FOLDER']
     out = os.path.join(base, str(dataset_id))
-    os.makedirs(os.path.join(out, 'images'), exist_ok=True)
-    os.makedirs(os.path.join(out, 'charts'), exist_ok=True)
+    os.makedirs(out, exist_ok=True)
     return out
 
 
@@ -358,7 +357,7 @@ def _detect_datetime_columns(df):
     """
     return shared_detect_dates(df)
 
-def generate_charts(df, output_dir, selected_charts=None):
+def generate_charts(df, selected_charts=None):
     charts = {}
     df =_prepare_dataframe(df)
     numeric = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -370,33 +369,33 @@ def generate_charts(df, output_dir, selected_charts=None):
         charts['histograms'] = []
         for col in numeric[:6]:
             try:
-                chart_data, img = histogram(df, col, output_dir)
+                chart_data = histogram(df, col)
                 if chart_data:
-                    charts['histograms'].append({'column': col, 'plotly': chart_data, 'image': img})
+                    charts['histograms'].append({'column': col, 'plotly': chart_data})
             except Exception as e:
                 _log_error('histogram', col, e)
     if 'boxplot' in all_charts:
         charts['boxplots'] = []
         for col in numeric[:6]:
             try:
-                chart_data, img = boxplot(df, col, output_dir)
+                chart_data = boxplot(df, col)
                 if chart_data:
-                    charts['boxplots'].append({'column': col, 'plotly': chart_data, 'image': img})
+                    charts['boxplots'].append({'column': col, 'plotly': chart_data})
             except Exception as e:
                 _log_error('boxplot', col, e)
     if 'density' in all_charts:
         charts['density'] = []
         for col in numeric[:6]:
             try:
-                chart_data, img = density_plot(df, col, output_dir)
+                chart_data = density_plot(df, col)
                 if chart_data:
-                    charts['density'].append({'column': col, 'plotly': chart_data, 'image': img})
+                    charts['density'].append({'column': col, 'plotly': chart_data})
             except Exception as e:
                 _log_error('density_plot', col, e)
     if 'correlation' in all_charts:
         try:
-            chart_data, img = correlation_heatmap(df, output_dir)
-            charts['correlation'] = {'plotly': chart_data, 'image': img} if chart_data else None
+            chart_data = correlation_heatmap(df)
+            charts['correlation'] = chart_data
         except Exception as e:
             _log_error('correlation_heatmap', 'all', e)
             charts['correlation'] = None
@@ -404,15 +403,15 @@ def generate_charts(df, output_dir, selected_charts=None):
         missing = compute_missing_analysis(df)['columns']
         if missing:
             try:
-                chart_data, img = missing_values_chart(missing, output_dir)
-                charts['missing'] = {'plotly': chart_data, 'image': img} if chart_data else None
+                chart_data = missing_values_chart(missing)
+                charts['missing'] = chart_data
             except Exception as e:
                 _log_error('missing_values_chart', 'all', e)
                 charts['missing'] = None
     if 'missing_heatmap' in all_charts:
         try:
-            chart_data, img = missing_heatmap(df, output_dir)
-            charts['missing_heatmap'] = {'plotly': chart_data, 'image': img} if chart_data else None
+            chart_data = missing_heatmap(df)
+            charts['missing_heatmap'] = chart_data
         except Exception as e:
             _log_error('missing_heatmap', 'all', e)
             charts['missing_heatmap'] = None
@@ -422,9 +421,9 @@ def generate_charts(df, output_dir, selected_charts=None):
             try:
                 freq = df[col].dropna().value_counts().head(10).to_dict()
                 freq = {str(k): int(v) for k, v in freq.items()}
-                chart_data, img = bar_chart(freq, f'Top Values — {col}', output_dir, f'bar_{col}')
+                chart_data = bar_chart(freq, f'Top Values — {col}', f'bar_{col}')
                 if chart_data:
-                    charts['bar'].append({'column': col, 'plotly': chart_data, 'image': img})
+                    charts['bar'].append({'column': col, 'plotly': chart_data})
             except Exception as e:
                 _log_error('bar_chart', col, e)
     if 'pie' in all_charts:
@@ -433,9 +432,9 @@ def generate_charts(df, output_dir, selected_charts=None):
             try:
                 freq = df[col].dropna().value_counts().head(8).to_dict()
                 freq = {str(k): int(v) for k, v in freq.items()}
-                chart_data, img = pie_chart(freq, f'Distribution — {col}', output_dir, f'pie_{col}')
+                chart_data = pie_chart(freq, f'Distribution — {col}', f'pie_{col}')
                 if chart_data:
-                    charts['pie'].append({'column': col, 'plotly': chart_data, 'image': img})
+                    charts['pie'].append({'column': col, 'plotly': chart_data})
             except Exception as e:
                 _log_error('pie_chart', col, e)
     if 'trend' in all_charts:
@@ -447,14 +446,14 @@ def generate_charts(df, output_dir, selected_charts=None):
             date_col = date_cols[0]
             value_col = numeric[0]
             try:
-                chart_data, img = trend_chart(df, date_col, value_col, output_dir)
-                charts['trend'] = {'plotly': chart_data, 'image': img} if chart_data else None
+                chart_data = trend_chart(df, date_col, value_col)
+                charts['trend'] = chart_data
             except Exception as e:
                 _log_error('trend_chart', value_col, e)
                 charts['trend'] = None
             try:
-                ra_data, ra_img = rolling_average_chart(df, date_col, value_col, 7, output_dir)
-                charts['rolling_avg'] = {'plotly': ra_data, 'image': ra_img} if ra_data else None
+                ra_data = rolling_average_chart(df, date_col, value_col, 7)
+                charts['rolling_avg'] = ra_data
             except Exception as e:
                 _log_error('rolling_average_chart', value_col, e)
                 charts['rolling_avg'] = None
@@ -482,7 +481,7 @@ def run_automatic_eda(dataset_id, user_id):
     feature_insights = get_feature_insights(df, stats, correlation, outliers_iqr)
     column_types = compute_column_types(df)
 
-    charts, total_charts = generate_charts(df, output_dir)
+    charts, total_charts = generate_charts(df)
 
     report = EDAReport(
         dataset_id=dataset_id, eda_mode='automatic',
@@ -580,7 +579,7 @@ def run_manual_eda(dataset_id, user_id, selections):
             mapped_charts.append(chart_map[c])
 
     if mapped_charts:
-        charts_result, total_charts = generate_charts(df, output_dir, selected_charts=mapped_charts)
+        charts_result, total_charts = generate_charts(df, selected_charts=mapped_charts)
         charts.update(charts_result)
 
     results['charts'] = charts
@@ -667,20 +666,20 @@ def generate_html_report(dataset, results, output_dir):
             html_parts.append(f'<tr><td>{p["col1"]}</td><td>{p["col2"]}</td><td><strong>{p["value"]}</strong></td></tr>')
         html_parts.append('</table></div>')
 
-    corr_img = os.path.join(output_dir, 'images', 'correlation_heatmap.png')
-    if os.path.exists(corr_img):
-        import base64
-        with open(corr_img, 'rb') as f:
-            b64 = base64.b64encode(f.read()).decode()
-        html_parts.append(f'<div class="section"><h2>Correlation Heatmap</h2><img src="data:image/png;base64,{b64}"></div>')
-
-    for img_type in ['missing_values']:
-        img_path = os.path.join(output_dir, 'images', f'{img_type}.png')
-        if os.path.exists(img_path):
-            import base64
-            with open(img_path, 'rb') as f:
-                b64 = base64.b64encode(f.read()).decode()
-            html_parts.append(f'<div class="section"><h2>{img_type.replace("_", " ").title()}</h2><img src="data:image/png;base64,{b64}"></div>')
+    charts_data = results.get('charts', {})
+    if charts_data:
+        import json as _json
+        html_parts.append('<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>')
+        corr_chart = charts_data.get('correlation')
+        if corr_chart:
+            corr_json = _json.dumps(corr_chart)
+            html_parts.append('<div class="section"><h2>Correlation Heatmap</h2><div id="corr-heatmap"></div></div>')
+            html_parts.append('<script>var cd=' + corr_json + ';Plotly.newPlot("corr-heatmap",cd.data,cd.layout||{},{responsive:true});</script>')
+        missing_chart = charts_data.get('missing')
+        if missing_chart:
+            miss_json = _json.dumps(missing_chart)
+            html_parts.append('<div class="section"><h2>Missing Values</h2><div id="missing-chart"></div></div>')
+            html_parts.append('<script>var md=' + miss_json + ';Plotly.newPlot("missing-chart",md.data,md.layout||{},{responsive:true});</script>')
 
     if categorical:
         html_parts.append('<div class="section"><h2>Categorical Analysis</h2>')

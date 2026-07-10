@@ -36,26 +36,26 @@
     {% endif %}
 
     {% set corr_chart = charts.get('correlation', {}) %}
-    {% if corr_chart and corr_chart.get('image') %}
+    {% if corr_chart and corr_chart.get('data') %}
     <div class="section-card mb-4 chart-box">
         <div class="card-header"><h5 class="mb-0 fw-bold section-title"><i class="fas fa-th me-2"></i>Correlation Heatmap</h5></div>
-        <div class="card-body"><img src="{{ corr_chart.image }}" alt="Correlation Heatmap" class="chart-image"></div>
+        <div class="card-body"><div id="chart-correlation" class="chart-container"></div></div>
     </div>
     {% endif %}
 
     {% set missing_chart = charts.get('missing', {}) %}
-    {% if missing_chart and missing_chart.get('image') %}
+    {% if missing_chart and missing_chart.get('data') %}
     <div class="section-card mb-4 chart-box">
         <div class="card-header"><h5 class="mb-0 fw-bold section-title"><i class="fas fa-exclamation-triangle me-2"></i>Missing Values</h5></div>
-        <div class="card-body"><img src="{{ missing_chart.image }}" alt="Missing Values Chart" class="chart-image"></div>
+        <div class="card-body"><div id="chart-missing" class="chart-container"></div></div>
     </div>
     {% endif %}
 
     {% set trend_chart = charts.get('trend', {}) %}
-    {% if trend_chart and trend_chart.get('image') %}
+    {% if trend_chart and trend_chart.get('data') %}
     <div class="section-card mb-4 chart-box">
         <div class="card-header"><h5 class="mb-0 fw-bold section-title"><i class="fas fa-chart-line me-2"></i>Trend Analysis</h5></div>
-        <div class="card-body"><img src="{{ trend_chart.image }}" alt="Trend Chart" class="chart-image"></div>
+        <div class="card-body"><div id="chart-trend" class="chart-container"></div></div>
     </div>
     {% endif %}
 
@@ -67,7 +67,7 @@
             <div class="row">
                 {% for h in histograms %}
                 <div class="col-md-6 mb-3">
-                    {% if h.image %}<img src="{{ h.image }}" alt="Histogram: {{ h.column }}" class="chart-image">{% endif %}
+                    {% if h.get('plotly') %}<div id="chart-histogram-{{ loop.index0 }}" class="chart-container"></div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -83,7 +83,7 @@
             <div class="row">
                 {% for b in boxplots %}
                 <div class="col-md-6 mb-3">
-                    {% if b.image %}<img src="{{ b.image }}" alt="Box Plot: {{ b.column }}" class="chart-image">{% endif %}
+                    {% if b.get('plotly') %}<div id="chart-boxplot-{{ loop.index0 }}" class="chart-container"></div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -99,7 +99,7 @@
             <div class="row">
                 {% for b in bars %}
                 <div class="col-md-6 mb-3">
-                    {% if b.image %}<img src="{{ b.image }}" alt="Bar Chart: {{ b.column }}" class="chart-image">{% endif %}
+                    {% if b.get('plotly') %}<div id="chart-bar-{{ loop.index0 }}" class="chart-container"></div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -115,7 +115,7 @@
             <div class="row">
                 {% for p in pies %}
                 <div class="col-md-6 mb-3">
-                    {% if p.image %}<img src="{{ p.image }}" alt="Pie Chart: {{ p.column }}" class="chart-image">{% endif %}
+                    {% if p.get('plotly') %}<div id="chart-pie-{{ loop.index0 }}" class="chart-container"></div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -124,4 +124,67 @@
     {% endif %}
 </div>
 {% endblock %}
-
+{% block extra_js %}
+<script>
+var MODEBAR_CONFIG = {
+    displaylogo: false,
+    responsive: true,
+    modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines"]
+};
+function plotChart(id, data, layout) {
+    var el = document.getElementById(id);
+    if (el) {
+        if (layout) {
+            if (!layout.margin) layout.margin = {};
+            if (layout.margin.t === undefined || layout.margin.t < 55) layout.margin.t = 55;
+            if (layout.margin.r === undefined || layout.margin.r < 10) layout.margin.r = 10;
+        }
+        Plotly.newPlot(el, data, layout || {}, MODEBAR_CONFIG);
+    }
+}
+{% if corr_chart and corr_chart.get('data') %}
+var corrData = {{ corr_chart | tojson | safe }};
+plotChart('chart-correlation', corrData.data, corrData.layout);
+{% endif %}
+{% if missing_chart and missing_chart.get('data') %}
+var missingData = {{ missing_chart | tojson | safe }};
+plotChart('chart-missing', missingData.data, missingData.layout);
+{% endif %}
+{% if trend_chart and trend_chart.get('data') %}
+var trendData = {{ trend_chart | tojson | safe }};
+plotChart('chart-trend', trendData.data, trendData.layout);
+{% endif %}
+{% if histograms %}
+  {% for h in histograms %}
+    {% if h.get('plotly') %}
+var histData{{ loop.index0 }} = {{ h.plotly | tojson | safe }};
+plotChart('chart-histogram-{{ loop.index0 }}', histData{{ loop.index0 }}.data, histData{{ loop.index0 }}.layout);
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if boxplots %}
+  {% for b in boxplots %}
+    {% if b.get('plotly') %}
+var boxData{{ loop.index0 }} = {{ b.plotly | tojson | safe }};
+plotChart('chart-boxplot-{{ loop.index0 }}', boxData{{ loop.index0 }}.data, boxData{{ loop.index0 }}.layout);
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if bars %}
+  {% for b in bars %}
+    {% if b.get('plotly') %}
+var barData{{ loop.index0 }} = {{ b.plotly | tojson | safe }};
+plotChart('chart-bar-{{ loop.index0 }}', barData{{ loop.index0 }}.data, barData{{ loop.index0 }}.layout);
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if pies %}
+  {% for p in pies %}
+    {% if p.get('plotly') %}
+var pieData{{ loop.index0 }} = {{ p.plotly | tojson | safe }};
+plotChart('chart-pie-{{ loop.index0 }}', pieData{{ loop.index0 }}.data, pieData{{ loop.index0 }}.layout);
+    {% endif %}
+  {% endfor %}
+{% endif %}
+</script>
+{% endblock %}

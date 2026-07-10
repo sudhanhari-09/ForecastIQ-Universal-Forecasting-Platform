@@ -188,11 +188,76 @@ def results(dataset_id):
     workflow_state = get_workflow_state(dataset_id)
     step_urls = wf_get_step_urls(dataset_id, 5, workflow_state)
 
+    best_model = results_data.get('best_model')
+    best_model_data = (results_data.get('models') or {}).get(best_model, {})
+    test_actual = results_data.get('test_values', [])
+    test_preds = best_model_data.get('test_predictions', [])
+    future_preds = results_data.get('future_predictions', [])
+    future_dates = results_data.get('future_dates', [])
+
+    charts_json = json.dumps({
+        'actual_vs_predicted': _build_actual_predicted_chart(test_actual, test_preds),
+        'forecast': _build_forecast_chart(future_preds, future_dates)
+    })
+
     return render_template('forecast_results.html', dataset=dataset,
                            results=results_data, report=report,
-                           dataset_id=dataset_id,
+                           dataset_id=dataset_id, charts_json=charts_json,
                            current_step=workflow_state['current'],
                            workflow_state=workflow_state, step_urls=step_urls)
+
+
+def _build_actual_predicted_chart(test_actual, test_preds):
+    if not test_actual or not test_preds:
+        return None
+    n = min(len(test_actual), len(test_preds))
+    indices = list(range(1, n + 1))
+    actual = test_actual[:n]
+    predicted = test_preds[:n]
+    return {
+        'data': [
+            {'x': indices, 'y': actual, 'type': 'scatter', 'mode': 'lines+markers',
+             'name': 'Actual', 'line': {'color': '#0d6efd', 'width': 2}},
+            {'x': indices, 'y': predicted, 'type': 'scatter', 'mode': 'lines+markers',
+             'name': 'Predicted', 'line': {'color': '#dc3545', 'width': 2, 'dash': 'dash'}}
+        ],
+        'layout': {
+            'title': 'Actual vs Predicted', 'template': 'plotly_white',
+            'height': 400, 'xaxis': {'title': 'Test Sample'}, 'yaxis': {'title': 'Value'},
+            'margin': {'t': 50, 'b': 50, 'l': 60, 'r': 20},
+            'legend': {'orientation': 'h', 'y': -0.2}
+        }
+    }
+
+
+def _build_forecast_chart(future_preds, future_dates):
+    if not future_preds:
+        return None
+    values = [r.get('value') for r in future_preds]
+    dates = [r.get('date') for r in future_preds]
+    upper = [r.get('upper_confidence') for r in future_preds]
+    lower = [r.get('lower_confidence') for r in future_preds]
+    has_ci = any(upper) and any(lower)
+    traces = [
+        {'x': dates, 'y': values, 'type': 'scatter', 'mode': 'lines+markers',
+         'name': 'Forecast', 'line': {'color': '#0d6efd', 'width': 2}}
+    ]
+    if has_ci:
+        traces.append({
+            'x': dates + dates[::-1], 'y': upper + lower[::-1],
+            'type': 'scatter', 'fill': 'toself', 'name': '95% CI',
+            'line': {'color': 'rgba(13,110,253,0.2)'},
+            'showlegend': True
+        })
+    return {
+        'data': traces,
+        'layout': {
+            'title': 'Future Forecast', 'template': 'plotly_white',
+            'height': 400, 'xaxis': {'title': 'Date'}, 'yaxis': {'title': 'Forecast Value'},
+            'margin': {'t': 50, 'b': 50, 'l': 60, 'r': 20},
+            'legend': {'orientation': 'h', 'y': -0.2}
+        }
+    }
 
 
 @forecasting_bp.route('/forecasting/dashboard/<int:dataset_id>')

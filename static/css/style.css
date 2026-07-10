@@ -1611,13 +1611,55 @@ code {
     }
 }
 
-/* ===== Chart Images ===== */
-.chart-image {
+/* ===== Chart Containers (Live Plotly) ===== */
+.chart-container {
     width: 100%;
-    height: auto;
-    object-fit: contain;
-    display: block;
+    min-height: 350px;
     border-radius: var(--radius-sm);
+}
+.chart-container .js-plotly-plot,
+.chart-container .plotly,
+.chart-container .plotly * {
+    width: 100%;
+}
+.chart-container .modebar-container {
+    position: absolute !important;
+    top: 8px !important;
+    right: 10px !important;
+    left: auto !important;
+    width: auto !important;
+    z-index: 10;
+    height: auto !important;
+}
+.chart-container .modebar {
+    display: flex !important;
+    flex-direction: row !important;
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.chart-container .modebar-group {
+    display: flex !important;
+    flex-direction: row !important;
+    width: auto !important;
+}
+.chart-container .modebar-btn {
+    font-size: 13px !important;
+    color: #4a5568 !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    margin: 0 1px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.chart-container .modebar-btn:hover {
+    color: #2563EB !important;
+    background: rgba(37, 99, 235, 0.08) !important;
+    border-radius: 4px !important;
 }
 
 /* ===== Best Model Box ===== */
