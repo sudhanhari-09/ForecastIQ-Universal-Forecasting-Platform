@@ -167,26 +167,74 @@ def missing_heatmap(df):
     if total_missing == 0:
         _log_error('missing_heatmap', '', 'No missing values to plot')
         return None
+
     max_cols = 50
     cols = missing_binary.columns.tolist()
     if len(cols) > max_cols:
         cols = cols[:max_cols]
+
     plot_data = missing_binary[cols]
-    max_rows = 2000
-    if len(plot_data) > max_rows:
-        indices = np.linspace(0, len(plot_data) - 1, max_rows, dtype=int)
-        plot_data = plot_data.iloc[indices]
+    num_rows, num_cols = plot_data.shape
+
+    z_orig = plot_data.T.values
+
+    if num_rows <= 300:
+        num_blocks = num_rows
+        z = z_orig
+        x_labels = [str(i) for i in range(num_rows)]
+    else:
+        num_blocks = min(300, max(60, num_rows // 10))
+        indices = np.linspace(0, num_rows, num_blocks + 1).astype(int)
+        z = np.zeros((num_cols, num_blocks))
+        for b in range(num_blocks):
+            start, end = indices[b], indices[b + 1]
+            z[:, b] = z_orig[:, start:end].mean(axis=1)
+        x_labels = [f'{indices[b]}-{indices[b+1]-1}' for b in range(num_blocks)]
+
     fig = go.Figure(data=go.Heatmap(
-        z=plot_data.T.values,
-        x=list(range(len(plot_data))),
+        z=z,
+        x=x_labels,
         y=cols,
-        colorscale=[[0, '#e8f5e9'], [1, '#dc3545']],
-        showscale=False
+        colorscale=[
+            [0.0, '#FAFAFA'],
+            [0.25, '#FECACA'],
+            [0.5, '#F87171'],
+            [0.75, '#EF4444'],
+            [1.0, '#991B1B']
+        ],
+        showscale=True,
+        colorbar=dict(
+            title=dict(text='Missing %', side='right'),
+            tickvals=[0, 0.25, 0.5, 0.75, 1.0],
+            ticktext=['0%', '25%', '50%', '75%', '100%'],
+            len=0.75,
+            thickness=15
+        ),
+        zmin=0,
+        zmax=1,
+        hovertemplate='Column: %{y}<br>Rows: %{x}<br>Missing: %{z:.1%}<extra></extra>'
     ))
-    fig.update_layout(title='Missing Value Heatmap', template='plotly_white',
-                      height=max(300, len(cols) * 20), width=700,
-                      margin=dict(l=100, r=20, t=50, b=50),
-                      xaxis_visible=False)
+
+    height = max(350, min(600, num_cols * 32 + 120))
+    tick_spacing = max(1, num_blocks // 20) if num_blocks > 30 else 1
+
+    fig.update_layout(
+        title='Missing Value Heatmap',
+        template='plotly_white',
+        height=height,
+        margin=dict(l=130, r=40, t=50, b=50),
+        xaxis=dict(
+            title='Row Blocks' if num_rows > 300 else 'Row Index',
+            showticklabels=num_blocks <= 150,
+            tickangle=0,
+            tickvals=list(range(0, num_blocks, tick_spacing)) if num_blocks > 30 else None,
+            ticktext=[x_labels[i] for i in range(0, num_blocks, tick_spacing)] if num_blocks > 30 else None
+        ),
+        yaxis=dict(
+            tickfont=dict(size=10)
+        )
+    )
+
     fig = _validate_output(fig, 'missing_heatmap', 'all')
     if fig is None:
         return None

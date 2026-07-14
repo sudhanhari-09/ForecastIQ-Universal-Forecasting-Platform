@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}AI Copilot Settings{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_chat.css') }}">
+<style>
+.ai-settings-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+.ai-settings-header {
+    margin-bottom: 2rem;
+}
+.ai-settings-header h2 {
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+.ai-settings-header p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: 0;
+}
+.settings-card {
+    background: var(--white);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--card-shadow);
+}
+.settings-card h5 {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: 0.375rem;
+}
+.form-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+.provider-select .provider-option {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.provider-select .provider-option:hover {
+    border-color: var(--primary);
+    background: var(--primary-subtle);
+}
+.provider-select .provider-option.active {
+    border-color: var(--primary);
+    background: var(--primary-subtle);
+}
+.provider-select .provider-option i {
+    font-size: 1.25rem;
+    width: 1.5rem;
+    text-align: center;
+    color: var(--primary);
+}
+.provider-select .provider-option span {
+    font-weight: 500;
+    font-size: 0.9375rem;
+}
+.api-key-input-group {
+    position: relative;
+}
+.api-key-input-group .toggle-visibility {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+.api-key-input-group .toggle-visibility:hover {
+    color: var(--text-secondary);
+}
+.settings-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+.settings-actions .btn {
+    padding: 0.625rem 1.5rem;
+    font-weight: 500;
+}
+.btn-save {
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+}
+.btn-save:hover {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+.btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+}
+.btn-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="ai-settings-container">
+    <div class="ai-settings-header">
+        <h2><i class="fas fa-robot me-2" style="color:var(--primary);"></i>AI Copilot Settings</h2>
+        <p>Configure your AI provider to enable the ForecastIQ AI Copilot assistant.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('ai.settings') }}" id="aiSettingsForm">
+        <div class="settings-card">
+            <h5><i class="fas fa-cloud me-2" style="color:var(--primary);"></i>AI Provider</h5>
+            <div class="provider-select mb-3">
+                <div class="row g-2">
+                    {% for p in [{'id': 'openai', 'label': 'OpenAI', 'icon': 'fa-brain'}, {'id': 'gemini', 'label': 'Gemini', 'icon': 'fa-sparkles'}, {'id': 'openrouter', 'label': 'OpenRouter', 'icon': 'fa-network-wired'}] %}
+                    <div class="col-md-4">
+                        <div class="provider-option {% if config.provider == p.id %}active{% endif %}" data-provider="{{ p.id }}" onclick="selectProvider('{{ p.id }}')">
+                            <i class="fas {{ p.icon }}"></i>
+                            <span>{{ p.label }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="provider" id="providerInput" value="{{ config.provider }}">
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h5><i class="fas fa-key me-2" style="color:var(--primary);"></i>Authentication</h5>
+            <div class="mb-3">
+                <label for="apiKey" class="form-label">API Key</label>
+                <div class="api-key-input-group">
+                    <input type="password" class="form-control" id="apiKey" name="api_key"
+                           placeholder="{% if config.has_api_key %}Enter new key to replace existing{% else %}Enter your API key{% endif %}"
+                           autocomplete="off">
+                    <button type="button" class="toggle-visibility" onclick="toggleApiKeyVisibility()" tabindex="-1">
+                        <i class="fas fa-eye" id="keyVisibilityIcon"></i>
+                    </button>
+                </div>
+                {% if config.has_api_key %}
+                <div class="form-text">
+                    <i class="fas fa-check-circle text-success me-1"></i>
+                    Key is configured. Leave blank to keep the existing key.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h5><i class="fas fa-sliders-h me-2" style="color:var(--primary);"></i>Model Configuration</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="model" class="form-label">Model</label>
+                    <input type="text" class="form-control" id="model" name="model"
+                           value="{{ config.model }}" placeholder="e.g. gpt-4o-mini">
+                    <div class="form-text">The model ID to use for chat completions.</div>
+                </div>
+                <div class="col-md-3">
+                    <label for="temperature" class="form-label">Temperature</label>
+                    <input type="number" class="form-control" id="temperature" name="temperature"
+                           value="{{ config.temperature }}" step="0.1" min="0" max="2">
+                    <div class="form-text">0.0 – 2.0 (default: 0.7)</div>
+                </div>
+                <div class="col-md-3">
+                    <label for="maxTokens" class="form-label">Max Tokens</label>
+                    <input type="number" class="form-control" id="maxTokens" name="max_tokens"
+                           value="{{ config.max_tokens }}" min="1" max="32768">
+                    <div class="form-text">Max tokens per response.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-actions">
+            <button type="submit" class="btn btn-save">
+                <i class="fas fa-save me-1"></i>Save Settings
+            </button>
+            <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function selectProvider(id) {
+    document.querySelectorAll('.provider-option').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.provider-option[data-provider="${id}"]`).classList.add('active');
+    document.getElementById('providerInput').value = id;
+}
+function toggleApiKeyVisibility() {
+    const input = document.getElementById('apiKey');
+    const icon = document.getElementById('keyVisibilityIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+</script>
+{% endblock %}

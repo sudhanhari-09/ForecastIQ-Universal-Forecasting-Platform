@@ -20,7 +20,15 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            logger.info('Auth blocked: no user_id in session')
             flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('auth.login'))
+        user = User.query.get(session['user_id'])
+        if not user:
+            logger.warning('Auth blocked: user_id %s no longer exists in database', session.get('user_id'))
+            session.clear()
+            session.permanent = False
+            flash('Your session has expired. Please log in again.', 'warning')
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -56,25 +64,40 @@ def login():
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
+        password = request.form.get('password', '').strip()
+
+        logger.info('Login attempt: username_field="%s"', username)
 
         if not username or not password:
+            logger.warning('Login failed: missing credentials (username=%s)', username or 'None')
             flash('Please enter both username/email and password.', 'danger')
             return render_template('login.html')
 
         login_lower = username.lower()
 
-        user = User.query.filter(
-            (func.lower(User.username) == login_lower) |
-            (func.lower(User.email) == login_lower)
-        ).first()
+        try:
+            user = User.query.filter(
+                (func.lower(User.username) == login_lower) |
+                (func.lower(User.email) == login_lower)
+            ).first()
+        except Exception as e:
+            logger.error('Login query failed for "%s": %s', username, str(e), exc_info=True)
+            flash('An error occurred. Please try again.', 'danger')
+            return render_template('login.html')
 
         if not user:
             logger.warning('Login failed: user not found for "%s"', username)
             flash('Invalid username/email or password.', 'danger')
             return render_template('login.html')
 
-        if not user.check_password(password):
+        try:
+            password_ok = user.check_password(password)
+        except Exception as e:
+            logger.error('Password check failed for user "%s" (id=%s): %s', user.username, user.id, str(e), exc_info=True)
+            flash('An error occurred. Please try again.', 'danger')
+            return render_template('login.html')
+
+        if not password_ok:
             logger.warning('Login failed: wrong password for user "%s" (id=%s)', user.username, user.id)
             flash('Invalid username/email or password.', 'danger')
             return render_template('login.html')
@@ -82,6 +105,7 @@ def login():
         session.permanent = True
         session['user_id'] = user.id
         session['username'] = user.username
+        session.modified = True
         logger.info('Login successful: user="%s" (id=%s)', user.username, user.id)
         flash(f'Welcome back, {user.username}!', 'success')
         resp = make_response(redirect(url_for('auth.dashboard')))
@@ -98,8 +122,8 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
 
         errors = []
 
@@ -164,8 +188,10 @@ def register():
 def logout():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    user_id = session.get('user_id')
     session.clear()
     session.permanent = False
+    logger.info('Logout successful: user_id=%s', user_id)
     flash('You have been logged out successfully.', 'info')
     resp = make_response(redirect(url_for('auth.login')))
     return _no_cache(resp)

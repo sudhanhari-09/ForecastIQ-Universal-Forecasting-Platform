@@ -9,6 +9,7 @@ from routes.preprocessing import preprocessing_bp
 from routes.forecasting import forecasting_bp
 from routes.comparison import comparison_bp
 from routes.reports import reports_bp
+from routes.ai import ai_bp
 from schema_sync import sync_schema
 import os
 
@@ -39,6 +40,7 @@ def create_app():
     app.register_blueprint(forecasting_bp)
     app.register_blueprint(comparison_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(ai_bp)
 
     with app.app_context():
         from models.user_model import User
@@ -51,6 +53,7 @@ def create_app():
         from models.comparison_report_model import ComparisonReport
         from models.report_model import Report
         from models.analysis_history_model import AnalysisHistory
+        from models.ai_settings_model import AISettings
         db.create_all()
         sync_schema(app)
 

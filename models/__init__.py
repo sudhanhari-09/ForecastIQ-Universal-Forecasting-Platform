@@ -8,3 +8,4 @@ from models.forecast_report_model import ForecastReport
 from models.comparison_report_model import ComparisonReport
 from models.report_model import Report
 from models.analysis_history_model import AnalysisHistory
+from models.ai_settings_model import AISettings

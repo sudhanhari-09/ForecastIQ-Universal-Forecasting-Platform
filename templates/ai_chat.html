@@ -1,0 +1,50 @@
+<div class="ai-copilot" id="aiCopilot">
+    <button class="ai-fab" id="aiFab" onclick="toggleAIChat()" title="ForecastIQ AI Copilot">
+        <i class="fas fa-robot" id="aiFabIcon"></i>
+    </button>
+
+    <div class="ai-chat-panel" id="aiChatPanel">
+        <div class="ai-chat-header">
+            <div class="ai-chat-header-left">
+                <div class="ai-chat-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="ai-chat-header-info">
+                    <span class="ai-chat-title">AI Copilot</span>
+                    <span class="ai-chat-subtitle">ForecastIQ Assistant</span>
+                </div>
+            </div>
+            <div class="ai-chat-header-actions">
+                <button class="ai-chat-btn-icon" onclick="clearConversation()" title="Clear conversation">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button class="ai-chat-btn-icon" onclick="toggleAIChat()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="ai-chat-messages" id="aiChatMessages">
+            <div class="ai-message ai-message-system">
+                <div class="ai-message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="ai-message-content">
+                    <p>Hello! I'm your ForecastIQ AI Copilot. I can help you understand your datasets, forecasting results, and workflow. How can I assist you today?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-chat-input-area">
+            <div class="ai-chat-input-wrapper">
+                <textarea class="ai-chat-input" id="aiChatInput" rows="1" placeholder="Ask me about your data..." onkeydown="handleInputKeydown(event)" oninput="autoResizeInput(this)"></textarea>
+                <button class="ai-chat-send-btn" id="aiSendBtn" onclick="sendMessage()" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="ai-chat-footer">
+                <span>AI responses are generated based on your workflow context</span>
+            </div>
+        </div>
+    </div>
+</div>

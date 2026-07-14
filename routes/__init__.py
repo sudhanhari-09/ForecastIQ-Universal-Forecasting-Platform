@@ -5,3 +5,4 @@ from routes.preprocessing import preprocessing_bp
 from routes.forecasting import forecasting_bp
 from routes.comparison import comparison_bp
 from routes.reports import reports_bp
+from routes.ai import ai_bp

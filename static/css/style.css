@@ -2029,6 +2029,11 @@ code {
     background: rgba(37, 99, 235, 0.05);
 }
 
+/* ===== Dashboard Activity Rows ===== */
+.dash-activity-row:hover {
+  background: var(--primary-light);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 767.98px) {
     .app-sidebar {
