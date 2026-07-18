@@ -547,7 +547,27 @@ venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Run the application
+# 4. Configure environment variables
+cp .env.example .env
+```
+
+Edit the `.env` file and set a strong `SECRET_KEY`:
+
+```bash
+# Generate a secure random key:
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Paste the generated key into your `.env` file:
+
+```ini
+SECRET_KEY=your-generated-64-character-hex-key
+```
+
+> **Note:** The app warns on startup if `SECRET_KEY` is not set and falls back to a development-only key. Always set a strong secret in production.
+
+```bash
+# 5. Run the application
 python run.py
 ```
 

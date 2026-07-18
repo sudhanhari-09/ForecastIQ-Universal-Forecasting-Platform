@@ -43,6 +43,7 @@ plotly==6.8.0
 protobuf==7.35.1
 Pygments==2.20.0
 pyparsing==3.3.2
+python-dotenv==1.1.0
 python-dateutil==2.9.0.post0
 reportlab==5.0.0
 requests==2.34.2

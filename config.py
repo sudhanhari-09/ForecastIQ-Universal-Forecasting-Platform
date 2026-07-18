@@ -1,13 +1,20 @@
 import os
+import warnings
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
-    SECRET_KEY = os.environ.get(
-        'SECRET_KEY',
-        'forecastiq-secret-key-change-in-production'
-    )
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        warnings.warn(
+            'SECRET_KEY environment variable is not set. '
+            'Set SECRET_KEY in your .env file or environment variables. '
+            'Using an insecure fallback for development only.',
+            RuntimeWarning
+        )
+        SECRET_KEY = 'forecastiq-dev-key-do-not-use-in-production'
+
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
         'sqlite:///' + os.path.join(basedir, 'instance', 'forecastiq.db')

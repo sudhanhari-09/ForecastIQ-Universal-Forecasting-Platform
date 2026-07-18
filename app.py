@@ -1,4 +1,5 @@
 import logging
+from dotenv import load_dotenv
 from flask import Flask
 from config import Config
 from database import db
@@ -15,6 +16,7 @@ import os
 
 
 def create_app():
+    load_dotenv()
     app = Flask(__name__)
     app.config.from_object(Config)
 
